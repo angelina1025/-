@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>水教官的大冒險 </title>
+    <title>水教官的大冒險 - 行動特攻版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* * 手機遊戲核心 CSS 
@@ -327,6 +327,10 @@
                     <div class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs">B</div>
                     <span>使用炸彈 (需 5 金幣)</span>
                 </div>
+                <div class="flex items-center gap-2 mt-2">
+                    <div class="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-white text-xs">!</div>
+                    <span class="text-green-700 font-bold">細菌很膽小，離太遠不會主動攻擊！</span>
+                </div>
             </div>
 
             <button class="btn-primary" onclick="Game.start()">開始任務</button>
@@ -354,6 +358,7 @@
             tileSize: 64,
             playerSpeed: 5,
             bulletSpeed: 10,
+            enemyAggroRange: 350, // 敵人警戒範圍
             colors: {
                 bg: '#1e293b', // 深色背景，讓遊戲區亮起來
                 floor1: '#f1f5f9',
@@ -872,23 +877,45 @@
                 ctx.save();
                 ctx.translate(this.center.x, this.center.y);
                 if (this.invincible > 0 && Math.floor(Date.now()/100)%2) ctx.globalAlpha = 0.5;
+                
+                // 根據朝向翻轉 X 軸
+                if (this.facing.x < 0) ctx.scale(-1, 1);
 
-                // 簡單的角色繪製
-                // 身體
-                ctx.fillStyle = '#3b82f6';
-                ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fill();
-                // 眼睛 (根據朝向)
-                const eyeX = this.facing.x * 8;
-                const eyeY = this.facing.y * 8 - 4;
-                ctx.fillStyle = 'white';
-                ctx.beginPath(); ctx.arc(eyeX - 5, eyeY, 5, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(eyeX + 5, eyeY, 5, 0, Math.PI*2); ctx.fill();
+                // --- 繪製角色 (綠衣、牛仔褲、黑框眼鏡、長方臉) ---
+                
+                // 1. 牛仔褲 (Jeans) - 深藍色
+                ctx.fillStyle = '#1e40af'; 
+                ctx.fillRect(-8, 10, 6, 12); // 左腿
+                ctx.fillRect(2, 10, 6, 12);  // 右腿
+
+                // 2. 綠色短袖上衣 (Green T-Shirt) - 綠色
+                ctx.fillStyle = '#16a34a'; 
+                ctx.fillRect(-10, -5, 20, 18); // 軀幹
+                // 袖子
+                ctx.fillRect(-14, -5, 4, 8);
+                ctx.fillRect(10, -5, 4, 8);
+
+                // 3. 長方形臉 (Rectangular Face) - 膚色
+                ctx.fillStyle = '#fde68a'; 
+                ctx.fillRect(-9, -22, 18, 18); 
+
+                // 4. 黑框眼鏡 (Black Glasses)
                 ctx.fillStyle = 'black';
-                ctx.beginPath(); ctx.arc(eyeX - 5, eyeY, 2, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(eyeX + 5, eyeY, 2, 0, Math.PI*2); ctx.fill();
-                // 帽子
-                ctx.fillStyle = '#1e3a8a';
-                ctx.beginPath(); ctx.arc(0, -5, 18, Math.PI, 0); ctx.fill();
+                // 鏡框
+                ctx.fillRect(-8, -16, 6, 4); // 左鏡片框
+                ctx.fillRect(2, -16, 6, 4);  // 右鏡片框
+                ctx.fillRect(-2, -15, 4, 1); // 中間鼻樑
+                
+                // 鏡片反光 (淺藍色)
+                ctx.fillStyle = '#bfdbfe'; 
+                ctx.fillRect(-7, -15, 4, 2);
+                ctx.fillRect(3, -15, 4, 2);
+
+                // 5. 頭髮 (簡單黑髮)
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(-10, -25, 20, 6); // 頂部
+                ctx.fillRect(-10, -25, 4, 15); // 側鬢角
+
                 ctx.restore();
             }
         }
@@ -899,6 +926,8 @@
                 this.speed = 100 + Math.random() * 50;
                 this.hp = 3;
                 this.type = 'enemy';
+                this.wanderTimer = 0;
+                this.wanderDir = {x: 0, y: 0};
             }
             
             update(dt) {
@@ -907,12 +936,34 @@
                 const dy = p.y - this.y;
                 const dist = Math.hypot(dx, dy);
                 
-                if (dist > 0) {
-                    this.vx = (dx / dist) * this.speed * dt;
-                    this.vy = (dy / dist) * this.speed * dt;
+                // --- 新增：仇恨機制 ---
+                // 只有距離玩家 < 350px 時才會追擊，否則隨機閒逛
+                if (dist < CONFIG.enemyAggroRange) {
+                    if (dist > 0) {
+                        this.vx = (dx / dist) * this.speed * dt;
+                        this.vy = (dy / dist) * this.speed * dt;
+                    }
+                } else {
+                    // 閒逛邏輯
+                    this.wanderTimer -= dt;
+                    if (this.wanderTimer <= 0) {
+                        this.wanderTimer = 1 + Math.random() * 2; // 每 1-3 秒換方向
+                        // 隨機緩慢移動 或 停下來
+                        if (Math.random() > 0.4) {
+                            const angle = Math.random() * Math.PI * 2;
+                            this.wanderDir = {
+                                x: Math.cos(angle) * this.speed * 0.3, // 速度較慢
+                                y: Math.sin(angle) * this.speed * 0.3
+                            };
+                        } else {
+                            this.wanderDir = {x: 0, y: 0}; // 休息
+                        }
+                    }
+                    this.vx = this.wanderDir.x * dt;
+                    this.vy = this.wanderDir.y * dt;
                 }
 
-                // 簡單碰撞推擠
+                // 簡單碰撞推擠 (避免重疊)
                 Game.entities.forEach(e => {
                     if (e !== this && e.type === 'enemy' && this.checkCollision(e)) {
                         this.vx -= (e.x - this.x) * 2 * dt;
@@ -920,13 +971,22 @@
                     }
                 });
 
-                this.x += this.vx;
-                this.y += this.vy;
+                // 檢查下一步是否撞牆，如果是就停下 (避免卡牆)
+                const nextX = this.x + this.vx;
+                const nextY = this.y + this.vy;
+                if(this.isValidPos(nextX, this.y)) this.x = nextX;
+                if(this.isValidPos(this.x, nextY)) this.y = nextY;
 
                 // 攻擊玩家
                 if (this.checkCollision(p)) {
                     p.takeDamage(1);
                 }
+            }
+            
+            isValidPos(nx, ny) {
+                 const c = Math.floor((nx + this.w/2) / CONFIG.tileSize);
+                 const r = Math.floor((ny + this.h/2) / CONFIG.tileSize);
+                 return Game.grid[r] && Game.grid[r][c] === 0;
             }
 
             takeDamage(amt) {
