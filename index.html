@@ -369,11 +369,11 @@
             <div class="bg-slate-100 p-5 rounded-2xl text-left text-sm text-slate-700 space-y-3 mb-6 border border-slate-200 shadow-inner">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-lg">🦠</div>
-                    <span>消滅 <strong class="text-red-600">10 隻細菌</strong></span>
+                    <span>消滅 <strong class="text-red-600"><span id="goal-enemies">10</span> 隻細菌</strong></span>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-lg">🔧</div>
-                    <span>使用水柱<strong class="text-blue-600">清洗 10 組管路</strong></span>
+                    <span>使用水柱<strong class="text-blue-600">清洗 <span id="goal-pipes">10</span> 組管路</strong></span>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-lg">🎁</div>
@@ -494,11 +494,11 @@
         const CONFIG = {
             tileSize: 64,
             playerSpeed: 250,
-            enemySpeed: 180,
+            enemySpeed: 180, // Default speed
             enemyWanderSpeed: 50,
             enemyAggroRange: 300,
-            totalEnemies: 10,
-            maxPipeStructures: 10,
+            totalEnemies: 10, // Default
+            maxPipeStructures: 10, // Default
             cleanTimePerTile: 0.5,
             dirtRegrowRate: 0.4,
             colors: {
@@ -776,6 +776,29 @@
             init() {
                 this.resize();
                 Input.init();
+
+                const isDesktop = window.innerWidth >= 1024;
+
+                if (isDesktop) {
+                    // PC 設定: 正方形大戰場，難度標準
+                    this.mapCols = 25;
+                    this.mapRows = 25;
+                    CONFIG.maxPipeStructures = 10;
+                    CONFIG.totalEnemies = 10;
+                    CONFIG.enemySpeed = 180;
+                } else {
+                    // 手機 設定: 長方形地圖 (14x24)，難度較簡單
+                    this.mapCols = 14;
+                    this.mapRows = 24;
+                    CONFIG.maxPipeStructures = 5; // 水管少一點
+                    CONFIG.totalEnemies = 6;      // 細菌少一點
+                    CONFIG.enemySpeed = 140;      // 速度慢一點
+                }
+
+                // 更新開始畫面的目標數字
+                document.getElementById('goal-enemies').innerText = CONFIG.totalEnemies;
+                document.getElementById('goal-pipes').innerText = CONFIG.maxPipeStructures;
+
                 window.addEventListener('resize', () => this.resize());
             },
 
