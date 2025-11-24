@@ -101,8 +101,8 @@
         }
         #minimap-canvas { width: 100%; height: 100%; display: block; }
 
-        /* --- 響應式調整 (針對寬度小於 1024px 的裝置 - 行動版介面) --- */
-        @media (max-width: 1023px) {
+        /* --- 響應式調整 (配合您的 CSS: max-width: 768px 為手機版) --- */
+        @media (max-width: 768px) {
             /* 1. 左側狀態欄垂直排列 */
             .status-panel-left {
                 flex-direction: column;
@@ -584,8 +584,8 @@
                 const controlsArea = document.querySelector('.controls-area');
                 const pcHint = document.getElementById('pc-controls-hint');
 
-                // 使用與 Game 邏輯一致的斷點 (1024px)
-                const isDesktop = window.innerWidth >= 1024;
+                // 使用與 CSS 媒體查詢一致的斷點 (768px)
+                const isDesktop = window.innerWidth > 768;
 
                 if (isDesktop) {
                     this.mode = 'keyboard';
@@ -810,7 +810,7 @@
             init() {
                 Input.init(); 
                 // 初始偵測
-                this.isDesktop = window.innerWidth >= 1024;
+                this.isDesktop = window.innerWidth > 768;
                 this.configureGameSettings();
                 this.resize();
                 
@@ -847,7 +847,8 @@
                 minimapCanvas.width = 150;
                 minimapCanvas.height = 150;
 
-                const newIsDesktop = window.innerWidth >= 1024;
+                // 使用 768px 作為斷點
+                const newIsDesktop = window.innerWidth > 768;
                 
                 // 如果模式改變（例如從直向轉橫向，或拉大視窗），則重新生成遊戲
                 if (this.isDesktop !== undefined && this.isDesktop !== newIsDesktop) {
