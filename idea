@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>水教官的大冒險 - 行動特攻版</title>
+    <title>水教官的大冒險 </title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* * 手機遊戲核心 CSS 
@@ -271,8 +271,8 @@
                 <div class="stat-badge text-red-600">
                     <span>❤️</span> <span id="hp-val">3</span>
                 </div>
-                <div class="stat-badge text-yellow-600">
-                    <span>💰</span> <span id="coin-val">0</span>
+                <div class="stat-badge text-gray-600">
+                     <span>💣</span> <span id="mine-val">0</span>
                 </div>
             </div>
             <div class="stat-badge text-blue-600 min-w-[80px] justify-center">
@@ -311,29 +311,25 @@
     <div id="start-modal" class="modal show">
         <div class="modal-content">
             <div class="text-4xl mb-2">🚰</div>
-            <h1 class="text-2xl font-black text-slate-800 mb-2">水教官特攻隊</h1>
-            <p class="text-slate-500 mb-4 text-sm">行動版操作說明</p>
+            <h1 class="text-2xl font-black text-slate-800 mb-2">水教官：深層淨化</h1>
+            <p class="text-slate-500 mb-4 text-sm">水管大堵塞！準備強力沖洗！</p>
             
             <div class="bg-slate-100 p-4 rounded-xl text-left text-sm text-slate-700 space-y-2 mb-4">
                 <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center text-white text-xs">L</div>
-                    <span>左側搖桿移動角色</span>
-                </div>
-                <div class="flex items-center gap-2">
                     <div class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">R</div>
-                    <span>右側按鈕發射高壓水柱</span>
+                    <span>發射水柱<strong class="text-blue-600">沖洗堵塞水管</strong></span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs">B</div>
-                    <span>使用炸彈 (需 5 金幣)</span>
-                </div>
-                <div class="flex items-center gap-2 mt-2">
                     <div class="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-white text-xs">!</div>
-                    <span class="text-green-700 font-bold">細菌很膽小，離太遠不會主動攻擊！</span>
+                    <span>細菌會<strong class="text-green-600">全地圖遊蕩</strong>，靠近才攻擊！</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">✨</span>
+                    <span>水管乾淨後發射<strong class="text-yellow-600">光波</strong>並獲得地雷！</span>
                 </div>
             </div>
 
-            <button class="btn-primary" onclick="Game.start()">開始任務</button>
+            <button class="btn-primary" onclick="Game.start()">開始淨化</button>
         </div>
     </div>
 
@@ -350,23 +346,24 @@
     <script>
         /**
          * 遊戲系統核心
-         * 使用模組化結構管理：Input(輸入), Render(渲染), Logic(邏輯)
          */
 
         // --- 常數設定 ---
         const CONFIG = {
             tileSize: 64,
-            playerSpeed: 5,
-            bulletSpeed: 10,
-            enemyAggroRange: 350, // 敵人警戒範圍
+            playerSpeed: 250,
+            enemySpeed: 180,
+            enemyWanderSpeed: 50, // 遊蕩速度較慢
+            enemyAggroRange: 300, // 敵人警戒範圍
             colors: {
-                bg: '#1e293b', // 深色背景，讓遊戲區亮起來
+                bg: '#1e293b', 
                 floor1: '#f1f5f9',
                 floor2: '#e2e8f0',
                 wall: '#334155',
                 water: '#3b82f6',
                 enemy: '#16a34a',
-                mine: '#ef4444'
+                mine: '#ef4444',
+                lightwave: '#fef08a'
             }
         };
 
@@ -375,15 +372,14 @@
             active: false,
             origin: { x: 0, y: 0 },
             current: { x: 0, y: 0 },
-            vector: { x: 0, y: 0 }, // 正規化向量 (-1 到 1)
+            vector: { x: 0, y: 0 }, 
             touchId: null,
-            radius: 60, // 搖桿半徑
+            radius: 60, 
             
             init() {
                 const zone = document.getElementById('joystick-zone');
                 const knob = document.getElementById('joystick-knob');
                 
-                // 觸控開始
                 zone.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     const touch = e.changedTouches[0];
@@ -391,7 +387,6 @@
                     this.active = true;
                     
                     const rect = zone.getBoundingClientRect();
-                    // 中心點
                     this.origin = { 
                         x: rect.left + rect.width / 2, 
                         y: rect.top + rect.height / 2 
@@ -401,7 +396,6 @@
                     knob.classList.add('active');
                 }, { passive: false });
 
-                // 觸控移動
                 zone.addEventListener('touchmove', (e) => {
                     e.preventDefault();
                     for(let i=0; i<e.changedTouches.length; i++) {
@@ -412,7 +406,6 @@
                     }
                 }, { passive: false });
 
-                // 觸控結束
                 const endHandler = (e) => {
                     for(let i=0; i<e.changedTouches.length; i++) {
                         if(e.changedTouches[i].identifier === this.touchId) {
@@ -427,23 +420,18 @@
 
             updatePosition(clientX, clientY) {
                 const knob = document.getElementById('joystick-knob');
-                
                 let dx = clientX - this.origin.x;
                 let dy = clientY - this.origin.y;
                 const distance = Math.sqrt(dx*dx + dy*dy);
                 
-                // 限制在圓圈內
                 if (distance > this.radius) {
                     const angle = Math.atan2(dy, dx);
                     dx = Math.cos(angle) * this.radius;
                     dy = Math.sin(angle) * this.radius;
                 }
 
-                // 計算正規化向量 (用於角色移動)
                 this.vector.x = dx / this.radius;
                 this.vector.y = dy / this.radius;
-
-                // 更新 UI
                 knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
             },
 
@@ -461,18 +449,15 @@
         const Camera = {
             x: 0, y: 0,
             follow(target) {
-                // 讓目標保持在螢幕中心
                 this.x = target.x - canvas.width / 2;
                 this.y = target.y - canvas.height / 2;
                 
-                // 邊界限制 (不讓鏡頭看出去外面)
                 const mapW = Game.mapCols * CONFIG.tileSize;
                 const mapH = Game.mapRows * CONFIG.tileSize;
                 
                 this.x = Math.max(0, Math.min(this.x, mapW - canvas.width));
                 this.y = Math.max(0, Math.min(this.y, mapH - canvas.height));
                 
-                // 如果地圖比螢幕小，置中
                 if (mapW < canvas.width) this.x = -(canvas.width - mapW) / 2;
                 if (mapH < canvas.height) this.y = -(canvas.height - mapH) / 2;
             }
@@ -487,16 +472,13 @@
             lastTime: 0,
             timeElapsed: 0,
             
-            // 地圖與實體
-            mapCols: 30, // 擴大地圖
+            mapCols: 30, 
             mapRows: 30,
             grid: [],
             entities: [],
             particles: [],
             obstacles: [],
             
-            // 狀態
-            coins: 0,
             mineCount: 0,
             enemiesKilled: 0,
             totalEnemies: 20,
@@ -505,11 +487,9 @@
                 this.resize();
                 Joystick.init();
                 
-                // 按鈕綁定
                 const btnShoot = document.getElementById('btn-shoot');
                 const btnMine = document.getElementById('btn-mine');
                 
-                // 支援連發 (按住)
                 let shootInterval;
                 const startShoot = (e) => {
                     e.preventDefault();
@@ -529,7 +509,6 @@
                 btnShoot.addEventListener('mousedown', startShoot);
                 btnShoot.addEventListener('mouseup', stopShoot);
 
-                // 地雷 (單點)
                 const placeMine = (e) => {
                     e.preventDefault();
                     if(!this.running) return;
@@ -546,7 +525,7 @@
             resize() {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
-                ctx.imageSmoothingEnabled = false; // 像素風格
+                ctx.imageSmoothingEnabled = false; 
             },
 
             start() {
@@ -554,7 +533,6 @@
                 document.getElementById('end-modal').classList.remove('show');
                 
                 this.running = true;
-                this.coins = 0;
                 this.mineCount = 0;
                 this.timeElapsed = 0;
                 this.enemiesKilled = 0;
@@ -562,15 +540,12 @@
                 this.obstacles = [];
                 this.entities = [];
                 
-                // 生成地圖
                 this.generateLevel();
                 
-                // 創建玩家
                 this.player = new Player(CONFIG.tileSize * 2, CONFIG.tileSize * 2);
                 this.entities.push(this.player);
 
-                // 初始敵人
-                for(let i=0; i<5; i++) this.spawnEnemy();
+                for(let i=0; i<8; i++) this.spawnEnemy();
 
                 this.lastTime = performance.now();
                 requestAnimationFrame((t) => this.loop(t));
@@ -583,20 +558,20 @@
 
             generateLevel() {
                 this.grid = [];
+                // 產生更多水管以供清洗
                 for(let r=0; r<this.mapRows; r++) {
                     let row = [];
                     for(let c=0; c<this.mapCols; c++) {
-                        // 邊界牆
                         if(r===0 || r===this.mapRows-1 || c===0 || c===this.mapCols-1) {
                             row.push(1);
                             this.obstacles.push(new Wall(c*CONFIG.tileSize, r*CONFIG.tileSize));
                         } else {
-                            // 隨機障礙物
-                            if (Math.random() < 0.1 && (r > 4 || c > 4)) {
-                                row.push(1); // 1 = 牆
+                            // 增加水管生成率
+                            if (Math.random() < 0.15 && (r > 4 || c > 4)) {
+                                row.push(1); 
                                 this.obstacles.push(new Pipe(c*CONFIG.tileSize, r*CONFIG.tileSize));
                             } else {
-                                row.push(0); // 0 = 地板
+                                row.push(0); 
                             }
                         }
                     }
@@ -613,9 +588,8 @@
                     x = c * CONFIG.tileSize;
                     y = r * CONFIG.tileSize;
                     attempts++;
-                    // 確保離玩家夠遠
                     let dist = Math.hypot(x - this.player.x, y - this.player.y);
-                    if (this.grid[r][c] === 0 && dist > 400) break;
+                    if (this.grid[r][c] === 0 && dist > 500) break;
                 } while (attempts < 50);
 
                 if (attempts < 50) {
@@ -635,50 +609,48 @@
             },
 
             update(dt) {
-                // 時間邏輯
-                if (Math.floor(now/1000) > this.timeElapsed) {
-                    this.timeElapsed++;
-                    if (this.timeElapsed % 2 === 0 && this.entities.filter(e => e.type === 'enemy').length < 15) {
-                        this.spawnEnemy();
-                    }
+                if (Math.floor(Date.now()/1000) > this.timeElapsed + Math.floor(this.lastTime/1000)) {
+                   // 簡單計時修正
                 }
-                document.getElementById('time-val').innerText = 
-                    Math.floor(this.timeElapsed/60).toString().padStart(2,'0') + ':' + 
-                    (this.timeElapsed%60).toString().padStart(2,'0');
+                this.timeElapsed += dt;
+                
+                // 生怪邏輯
+                if (Math.floor(this.timeElapsed) % 3 === 0 && this.entities.filter(e => e.type === 'enemy').length < 15) {
+                    if (Math.random() < 0.05) this.spawnEnemy();
+                }
 
-                // 鏡頭跟隨
+                let mins = Math.floor(this.timeElapsed/60).toString().padStart(2,'0');
+                let secs = Math.floor(this.timeElapsed%60).toString().padStart(2,'0');
+                document.getElementById('time-val').innerText = `${mins}:${secs}`;
+
                 Camera.follow(this.player);
 
-                // 實體更新
                 this.entities.forEach(e => e.update(dt));
                 this.obstacles.forEach(o => o.update(dt));
                 
-                // 粒子更新
                 this.particles.forEach(p => p.update(dt));
                 this.particles = this.particles.filter(p => p.life > 0);
 
-                // 清理死亡實體
                 this.entities = this.entities.filter(e => !e.dead);
                 this.obstacles = this.obstacles.filter(o => !o.dead);
 
-                // 勝利/失敗檢查
                 if (this.player.hp <= 0) this.gameOver(false);
-                if (this.enemiesKilled >= this.totalEnemies) this.gameOver(true);
                 
-                // 更新任務文字
-                document.getElementById('obj-text').innerText = `目標：清除細菌 (${this.enemiesKilled}/${this.totalEnemies})`;
+                // 勝利條件：所有水管洗乾淨
+                const dirtyPipes = this.obstacles.filter(o => o instanceof Pipe && o.dirty).length;
+                const enemies = this.entities.filter(e => e.type === 'enemy').length;
+                document.getElementById('obj-text').innerText = `剩餘水管: ${dirtyPipes} | 細菌: ${enemies}`;
+                
+                if (dirtyPipes === 0 && enemies === 0) this.gameOver(true);
             },
 
             draw() {
-                // 清空畫布
                 ctx.fillStyle = CONFIG.colors.bg;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 ctx.save();
-                // 應用鏡頭位移
                 ctx.translate(-Camera.x, -Camera.y);
 
-                // 繪製地板 (僅繪製視野內的)
                 const startCol = Math.floor(Camera.x / CONFIG.tileSize);
                 const endCol = startCol + (canvas.width / CONFIG.tileSize) + 1;
                 const startRow = Math.floor(Camera.y / CONFIG.tileSize);
@@ -695,9 +667,11 @@
                     }
                 }
 
-                // 繪製物體
-                // 按Y軸排序以產生正確的遮擋關係
-                const renderList = [...this.obstacles, ...this.entities, ...this.particles];
+                // 光波在最下層(地板上)，物體在上面
+                const lightWaves = this.entities.filter(e => e instanceof LightWave);
+                lightWaves.forEach(w => w.draw(ctx));
+
+                const renderList = [...this.obstacles, ...this.entities.filter(e => !(e instanceof LightWave)), ...this.particles];
                 renderList.sort((a, b) => (a.y + a.h) - (b.y + b.h));
 
                 renderList.forEach(obj => obj.draw(ctx));
@@ -714,22 +688,26 @@
             addFloatingText(x, y, text, color) {
                 const el = document.createElement('div');
                 el.className = 'floating-text';
-                el.style.left = (x - Camera.x) + 'px'; // 轉換為螢幕座標
+                el.style.left = (x - Camera.x) + 'px'; 
                 el.style.top = (y - Camera.y) + 'px';
                 el.style.color = color;
                 el.innerText = text;
-                document.getElementById('game-layer').parentNode.appendChild(el); // Append to body
+                document.getElementById('game-layer').parentNode.appendChild(el); 
                 setTimeout(() => el.remove(), 1000);
             },
 
             updateUI() {
                 document.getElementById('hp-val').innerText = this.player.hp;
-                document.getElementById('coin-val').innerText = this.coins;
+                document.getElementById('mine-val').innerText = this.mineCount;
                 document.getElementById('mine-count').innerText = this.mineCount;
-                if (this.coins >= 5) {
-                     document.getElementById('btn-mine').style.borderColor = '#fbbf24';
+                
+                const btnMine = document.getElementById('btn-mine');
+                if (this.mineCount > 0) {
+                     btnMine.style.borderColor = '#fbbf24';
+                     btnMine.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
                 } else {
-                     document.getElementById('btn-mine').style.borderColor = 'rgba(255,255,255,0.4)';
+                     btnMine.style.borderColor = 'rgba(255,255,255,0.4)';
+                     btnMine.style.background = 'rgba(255, 255, 255, 0.1)';
                 }
             },
 
@@ -742,20 +720,18 @@
 
                 modal.classList.add('show');
                 if (win) {
-                    icon.innerText = "🎉";
-                    title.innerText = "任務完成！";
+                    icon.innerText = "✨";
+                    title.innerText = "完美淨化！";
                     title.className = "text-3xl font-black text-green-600 mb-2";
-                    msg.innerText = `水教官成功守護了水源！`;
+                    msg.innerText = `所有水管都乾淨了！`;
                 } else {
-                    icon.innerText = "☠️";
+                    icon.innerText = "🦠";
                     title.innerText = "任務失敗";
                     title.className = "text-3xl font-black text-red-600 mb-2";
-                    msg.innerText = `細菌佔領了這片區域...`;
+                    msg.innerText = `細菌太多了...`;
                 }
             }
         };
-
-        const now = Date.now();
 
         // --- 類別定義 ---
 
@@ -785,14 +761,13 @@
             constructor(x, y) {
                 super(x, y, 40, 40);
                 this.hp = 5;
-                this.speed = 250;
+                this.speed = CONFIG.playerSpeed;
                 this.lastShot = 0;
                 this.facing = {x: 0, y: 1};
                 this.invincible = 0;
             }
 
             update(dt) {
-                // 從虛擬搖桿獲取輸入
                 if (Joystick.active) {
                     this.vx = Joystick.vector.x * this.speed * dt;
                     this.vy = Joystick.vector.y * this.speed * dt;
@@ -803,30 +778,18 @@
                     this.vx = 0; this.vy = 0;
                 }
 
-                // 碰撞檢測 (簡單版：預測下一步)
                 if (!this.isValidMove(this.x + this.vx, this.y)) this.vx = 0;
                 if (!this.isValidMove(this.x, this.y + this.vy)) this.vy = 0;
 
                 super.update(dt);
                 
-                // 邊界限制
                 this.x = Math.max(0, Math.min(this.x, Game.mapCols*CONFIG.tileSize - this.w));
                 this.y = Math.max(0, Math.min(this.y, Game.mapRows*CONFIG.tileSize - this.h));
 
                 if (this.invincible > 0) this.invincible -= dt;
-
-                // 撿金幣
-                Game.particles.forEach(p => {
-                    if (p.type === 'coin' && this.checkCollision({x:p.x-10, y:p.y-10, w:20, h:20})) {
-                        p.life = 0;
-                        Game.coins++;
-                        Game.updateUI();
-                    }
-                });
             }
 
             isValidMove(nx, ny) {
-                // 檢查四個角
                 const padding = 5;
                 const points = [
                     {c: Math.floor((nx+padding)/CONFIG.tileSize), r: Math.floor((ny+padding)/CONFIG.tileSize)},
@@ -841,7 +804,6 @@
                 const now = Date.now();
                 if (now - this.lastShot > 250) {
                     this.lastShot = now;
-                    // 正規化發射方向
                     let mag = Math.sqrt(this.facing.x**2 + this.facing.y**2);
                     if (mag === 0) mag = 1; 
                     
@@ -853,14 +815,13 @@
             }
 
             placeMine() {
-                if (Game.coins >= 5) {
-                    Game.coins -= 5;
+                if (Game.mineCount > 0) {
+                    Game.mineCount--;
                     Game.entities.push(new Mine(this.center.x, this.center.y));
-                    Game.mineCount++;
                     Game.updateUI();
-                    Game.addFloatingText(this.x, this.y, "-5💰", "#fbbf24");
+                    Game.addFloatingText(this.x, this.y, "地雷設置!", "#fbbf24");
                 } else {
-                    Game.addFloatingText(this.x, this.y, "金幣不足", "#ef4444");
+                    Game.addFloatingText(this.x, this.y, "需要洗水管!", "#ef4444");
                 }
             }
             
@@ -877,44 +838,37 @@
                 ctx.save();
                 ctx.translate(this.center.x, this.center.y);
                 if (this.invincible > 0 && Math.floor(Date.now()/100)%2) ctx.globalAlpha = 0.5;
-                
-                // 根據朝向翻轉 X 軸
                 if (this.facing.x < 0) ctx.scale(-1, 1);
 
-                // --- 繪製角色 (綠衣、牛仔褲、黑框眼鏡、長方臉) ---
-                
-                // 1. 牛仔褲 (Jeans) - 深藍色
+                // 牛仔褲
                 ctx.fillStyle = '#1e40af'; 
-                ctx.fillRect(-8, 10, 6, 12); // 左腿
-                ctx.fillRect(2, 10, 6, 12);  // 右腿
+                ctx.fillRect(-8, 10, 6, 12); 
+                ctx.fillRect(2, 10, 6, 12); 
 
-                // 2. 綠色短袖上衣 (Green T-Shirt) - 綠色
+                // 綠上衣
                 ctx.fillStyle = '#16a34a'; 
-                ctx.fillRect(-10, -5, 20, 18); // 軀幹
-                // 袖子
+                ctx.fillRect(-10, -5, 20, 18); 
                 ctx.fillRect(-14, -5, 4, 8);
                 ctx.fillRect(10, -5, 4, 8);
 
-                // 3. 長方形臉 (Rectangular Face) - 膚色
+                // 長方臉
                 ctx.fillStyle = '#fde68a'; 
                 ctx.fillRect(-9, -22, 18, 18); 
 
-                // 4. 黑框眼鏡 (Black Glasses)
+                // 黑框眼鏡
                 ctx.fillStyle = 'black';
-                // 鏡框
-                ctx.fillRect(-8, -16, 6, 4); // 左鏡片框
-                ctx.fillRect(2, -16, 6, 4);  // 右鏡片框
-                ctx.fillRect(-2, -15, 4, 1); // 中間鼻樑
+                ctx.fillRect(-8, -16, 6, 4); 
+                ctx.fillRect(2, -16, 6, 4); 
+                ctx.fillRect(-2, -15, 4, 1); 
                 
-                // 鏡片反光 (淺藍色)
                 ctx.fillStyle = '#bfdbfe'; 
                 ctx.fillRect(-7, -15, 4, 2);
                 ctx.fillRect(3, -15, 4, 2);
 
-                // 5. 頭髮 (簡單黑髮)
+                // 頭髮
                 ctx.fillStyle = '#0f172a';
-                ctx.fillRect(-10, -25, 20, 6); // 頂部
-                ctx.fillRect(-10, -25, 4, 15); // 側鬢角
+                ctx.fillRect(-10, -25, 20, 6); 
+                ctx.fillRect(-10, -25, 4, 15); 
 
                 ctx.restore();
             }
@@ -923,11 +877,13 @@
         class Enemy extends Entity {
             constructor(x, y) {
                 super(x, y, 40, 40);
-                this.speed = 100 + Math.random() * 50;
+                this.maxSpeed = CONFIG.enemySpeed;
+                this.wanderSpeed = CONFIG.enemyWanderSpeed;
                 this.hp = 3;
                 this.type = 'enemy';
                 this.wanderTimer = 0;
                 this.wanderDir = {x: 0, y: 0};
+                this.state = 'wander'; // 'wander' or 'chase'
             }
             
             update(dt) {
@@ -936,31 +892,34 @@
                 const dy = p.y - this.y;
                 const dist = Math.hypot(dx, dy);
                 
-                // --- 新增：仇恨機制 ---
-                // 只有距離玩家 < 350px 時才會追擊，否則隨機閒逛
+                // 狀態切換邏輯
                 if (dist < CONFIG.enemyAggroRange) {
+                    this.state = 'chase';
+                } else {
+                    this.state = 'wander';
+                }
+
+                if (this.state === 'chase') {
+                    // 追擊模式：快速移動
                     if (dist > 0) {
-                        this.vx = (dx / dist) * this.speed * dt;
-                        this.vy = (dy / dist) * this.speed * dt;
+                        this.vx = (dx / dist) * this.maxSpeed * dt;
+                        this.vy = (dy / dist) * this.maxSpeed * dt;
                     }
                 } else {
-                    // 閒逛邏輯
+                    // 遊蕩模式：全地圖緩慢移動
                     this.wanderTimer -= dt;
                     if (this.wanderTimer <= 0) {
-                        this.wanderTimer = 1 + Math.random() * 2; // 每 1-3 秒換方向
-                        // 隨機緩慢移動 或 停下來
-                        if (Math.random() > 0.4) {
-                            const angle = Math.random() * Math.PI * 2;
-                            this.wanderDir = {
-                                x: Math.cos(angle) * this.speed * 0.3, // 速度較慢
-                                y: Math.sin(angle) * this.speed * 0.3
-                            };
-                        } else {
-                            this.wanderDir = {x: 0, y: 0}; // 休息
-                        }
+                        // 2-4秒換一次方向
+                        this.wanderTimer = 2 + Math.random() * 2; 
+                        const angle = Math.random() * Math.PI * 2;
+                        // 設定遊蕩向量
+                        this.wanderDir = {
+                            x: Math.cos(angle) * this.wanderSpeed * dt,
+                            y: Math.sin(angle) * this.wanderSpeed * dt
+                        };
                     }
-                    this.vx = this.wanderDir.x * dt;
-                    this.vy = this.wanderDir.y * dt;
+                    this.vx = this.wanderDir.x;
+                    this.vy = this.wanderDir.y;
                 }
 
                 // 簡單碰撞推擠 (避免重疊)
@@ -971,11 +930,22 @@
                     }
                 });
 
-                // 檢查下一步是否撞牆，如果是就停下 (避免卡牆)
+                // 碰撞檢測與移動
                 const nextX = this.x + this.vx;
                 const nextY = this.y + this.vy;
-                if(this.isValidPos(nextX, this.y)) this.x = nextX;
-                if(this.isValidPos(this.x, nextY)) this.y = nextY;
+                
+                if(this.isValidPos(nextX, this.y)) {
+                    this.x = nextX;
+                } else if (this.state === 'wander') {
+                    // 遊蕩撞牆就換方向
+                    this.wanderTimer = 0; 
+                }
+
+                if(this.isValidPos(this.x, nextY)) {
+                    this.y = nextY;
+                } else if (this.state === 'wander') {
+                    this.wanderTimer = 0;
+                }
 
                 // 攻擊玩家
                 if (this.checkCollision(p)) {
@@ -984,8 +954,11 @@
             }
             
             isValidPos(nx, ny) {
+                 // 檢查中心點是否在地板上
                  const c = Math.floor((nx + this.w/2) / CONFIG.tileSize);
                  const r = Math.floor((ny + this.h/2) / CONFIG.tileSize);
+                 // 確保不超出地圖邊界
+                 if (c < 0 || c >= Game.mapCols || r < 0 || r >= Game.mapRows) return false;
                  return Game.grid[r] && Game.grid[r][c] === 0;
             }
 
@@ -994,9 +967,6 @@
                 if (this.hp <= 0) {
                     this.dead = true;
                     Game.enemiesKilled++;
-                    // 掉落金幣 (粒子)
-                    Game.particles.push(new Particle(this.center.x, this.center.y, 'coin'));
-                    // 死亡特效
                     for(let i=0; i<5; i++) {
                          Game.particles.push(new Particle(this.center.x, this.center.y, 'goo'));
                     }
@@ -1006,31 +976,93 @@
             draw(ctx) {
                 ctx.save();
                 ctx.translate(this.center.x, this.center.y);
-                // 史萊姆晃動效果
                 const scale = 1 + Math.sin(Date.now() / 200) * 0.1;
                 ctx.scale(scale, 1/scale);
                 
                 ctx.fillStyle = CONFIG.colors.enemy;
                 ctx.beginPath();
-                ctx.arc(0, 0, 15, Math.PI, 0); // 上半圓
-                // 底部波浪
+                ctx.arc(0, 0, 15, Math.PI, 0); 
                 ctx.lineTo(15, 10); 
                 ctx.lineTo(0, 15);
                 ctx.lineTo(-15, 10);
                 ctx.fill();
                 
-                // 邪惡表情
-                ctx.fillStyle = '#064e3b';
-                ctx.beginPath(); ctx.moveTo(-8, -5); ctx.lineTo(-2, 0); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(8, -5); ctx.lineTo(2, 0); ctx.stroke();
+                // 表情隨狀態改變
+                if (this.state === 'chase') {
+                    // 憤怒追擊
+                    ctx.fillStyle = '#064e3b';
+                    ctx.beginPath(); ctx.moveTo(-8, -5); ctx.lineTo(-2, 0); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(8, -5); ctx.lineTo(2, 0); ctx.stroke();
+                } else {
+                    // 發呆遊蕩 (圓眼睛)
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath(); ctx.arc(-5, -5, 3, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(5, -5, 3, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath(); ctx.arc(-5, -5, 1, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(5, -5, 1, 0, Math.PI*2); ctx.fill();
+                }
                 
                 ctx.restore();
                 
-                // 血條
                 ctx.fillStyle = 'red';
                 ctx.fillRect(this.x, this.y - 10, this.w, 4);
                 ctx.fillStyle = '#22c55e';
                 ctx.fillRect(this.x, this.y - 10, this.w * (this.hp/3), 4);
+            }
+        }
+
+        // --- 新增：十字光波 ---
+        class LightWave extends Entity {
+            constructor(cx, cy) {
+                super(0, 0, 0, 0); // 虛擬大小
+                this.cx = cx; this.cy = cy;
+                this.lifespan = 0.5; // 持續 0.5 秒
+                this.thickness = 40;
+                
+                // 橫向與縱向的矩形
+                this.hRect = { x: 0, y: cy - this.thickness/2, w: Game.mapCols * CONFIG.tileSize, h: this.thickness };
+                this.vRect = { x: cx - this.thickness/2, y: 0, w: this.thickness, h: Game.mapRows * CONFIG.tileSize };
+            }
+
+            update(dt) {
+                this.lifespan -= dt;
+                if (this.lifespan <= 0) this.dead = true;
+
+                // 傷害判定
+                Game.entities.forEach(e => {
+                    if (e.type === 'enemy') {
+                        if (this.checkHit(e, this.hRect) || this.checkHit(e, this.vRect)) {
+                            e.takeDamage(10); // 秒殺
+                            Game.particles.push(new Particle(e.center.x, e.center.y, 'explosion'));
+                        }
+                    }
+                });
+            }
+
+            checkHit(entity, rect) {
+                return (entity.x < rect.x + rect.w &&
+                        entity.x + entity.w > rect.x &&
+                        entity.y < rect.y + rect.h &&
+                        entity.y + entity.h > rect.y);
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = this.lifespan * 2; // 淡出
+                ctx.fillStyle = CONFIG.colors.lightwave;
+                
+                // 繪製光束
+                ctx.fillRect(this.hRect.x, this.hRect.y, this.hRect.w, this.hRect.h);
+                ctx.fillRect(this.vRect.x, this.vRect.y, this.vRect.w, this.vRect.h);
+                
+                // 核心亮點
+                ctx.fillStyle = '#fff';
+                ctx.globalAlpha = this.lifespan;
+                ctx.fillRect(this.hRect.x, this.hRect.y + 10, this.hRect.w, this.hRect.h - 20);
+                ctx.fillRect(this.vRect.x + 10, this.vRect.y, this.vRect.w - 20, this.vRect.h);
+                
+                ctx.restore();
             }
         }
 
@@ -1047,15 +1079,22 @@
                 this.life -= dt;
                 if (this.life <= 0) this.dead = true;
 
-                // 撞牆
+                // 撞牆/水管
                 let c = Math.floor(this.center.x / CONFIG.tileSize);
                 let r = Math.floor(this.center.y / CONFIG.tileSize);
-                if (Game.grid[r] && Game.grid[r][c] === 1) {
+                
+                // 檢查是否打中障礙物
+                let hitPipe = Game.obstacles.find(o => o.x / CONFIG.tileSize === c && o.y / CONFIG.tileSize === r);
+                if (hitPipe) {
                     this.dead = true;
-                    Game.particles.push(new Particle(this.x, this.y, 'water'));
+                    if (hitPipe instanceof Pipe) {
+                        hitPipe.clean(); // 清洗水管
+                    } else {
+                        // 普通牆壁
+                        Game.particles.push(new Particle(this.x, this.y, 'water'));
+                    }
                 }
 
-                // 撞敵人
                 Game.entities.forEach(e => {
                     if (e.type === 'enemy' && this.checkCollision(e)) {
                         e.takeDamage(1);
@@ -1137,31 +1176,69 @@
             constructor(x, y) {
                 super(x, y);
                 this.dirty = true;
+                this.rotation = Math.floor(Math.random() * 4); 
             }
             clean() {
                 if (this.dirty) {
                     this.dirty = false;
-                    this.dead = true; // 變成地板
-                    // 更新 grid
+                    this.dead = true; 
+                    
+                    // 清除地圖格擋，變成地板
                     let c = this.x / CONFIG.tileSize;
                     let r = this.y / CONFIG.tileSize;
                     Game.grid[r][c] = 0;
-                    Game.particles.push(new Particle(this.x + this.w/2, this.y + this.h/2, 'coin'));
-                    Game.coins += 2; // 獎勵
+
+                    // 給予地雷獎勵
+                    Game.mineCount++;
                     Game.updateUI();
+                    Game.addFloatingText(this.x, this.y, "+1 地雷 💣", "#fbbf24");
+
+                    // 觸發光波
+                    Game.entities.push(new LightWave(this.x + this.w/2, this.y + this.h/2));
+                    
+                    // 特效
+                    for(let i=0; i<5; i++) Game.particles.push(new Particle(this.x + this.w/2, this.y + this.h/2, 'water'));
                 }
             }
             draw(ctx) {
-                ctx.fillStyle = '#94a3b8';
-                ctx.fillRect(this.x+5, this.y+5, this.w-10, this.h-10);
+                ctx.save();
+                ctx.translate(this.x + this.w/2, this.y + this.h/2);
+                ctx.rotate(this.rotation * Math.PI / 2);
+                
+                // 髒污狀態：整條水管被深色淤泥堵塞
                 if (this.dirty) {
-                    ctx.fillStyle = '#854d0e'; // 髒污
-                    ctx.beginPath(); ctx.arc(this.x+this.w/2, this.y+this.h/2, 10, 0, Math.PI*2); ctx.fill();
-                    // 冒煙
-                    if (Math.random() < 0.05) {
-                        Game.particles.push(new Particle(this.x+this.w/2, this.y+this.h/2, 'goo'));
-                    }
+                    // 底色：深褐綠色淤泥
+                    ctx.fillStyle = '#3f6212';
+                    ctx.fillRect(-this.w/2, -this.h/4, this.w, this.h/2); // 主管身
+                    
+                    // 紋理：更深的斑點，模擬堵塞感
+                    ctx.fillStyle = '#1a2e05';
+                    ctx.fillRect(-this.w/2 + 5, -this.h/4 + 5, 20, this.h/2 - 10);
+                    ctx.fillRect(5, -this.h/4 + 5, 20, this.h/2 - 10);
+                    
+                    // 側邊突出的堵塞物
+                    ctx.fillStyle = '#4d7c0f';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 15, 0, Math.PI*2); // 中間一坨
+                    ctx.fill();
+
+                    // 管口邊緣 (依然顯示一點金屬邊框，讓人知道是管子)
+                    ctx.strokeStyle = '#57534e';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-this.w/2, -this.h/4, this.w, this.h/2);
+
+                } else {
+                    // 雖然邏輯上 clean 後會死掉，但保留繪製邏輯
+                    // 金屬漸層
+                    const grad = ctx.createLinearGradient(0, -this.h/2, 0, this.h/2);
+                    grad.addColorStop(0, '#94a3b8');
+                    grad.addColorStop(0.5, '#e2e8f0');
+                    grad.addColorStop(1, '#64748b');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(-this.w/2, -this.h/4, this.w, this.h/2);
                 }
+                
+                ctx.restore();
             }
         }
 
