@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>水教官的大冒險</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0fdf4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hud-text {
+            color: #1e293b;
+            text-shadow: 2px 2px 0 #fff;
+            pointer-events: none;
+            font-weight: 800;
+        }
+
+        .controls-area {
+            pointer-events: auto;
+            display: flex;
+            width: 100%;
+            padding: 10px 20px;
+            box-sizing: border-box;
+            justify-content: space-between;
+            align-items: flex-end;
+            background: linear-gradient(to top, rgba(255,255,255,0.8), transparent);
+        }
+
+        .d-pad {
+            position: relative;
+            width: 130px;
+            height: 130px;
+            margin-bottom: 10px;
+            display: none;
+        }
+        @media (hover: none) and (pointer: coarse) {
+            .d-pad { display: block; }
+            .mobile-btn { display: flex !important; }
+        }
+
+        .d-btn {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.1);
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        .d-btn:active { background: rgba(0, 0, 0, 0.2); transform: scale(0.95); }
+        .d-up { top: 0; left: 44px; }
+        .d-down { bottom: 0; left: 44px; }
+        .d-left { top: 44px; left: 0; }
+        .d-right { top: 44px; right: 0; }
+
+        /* 武器欄樣式 */
+        .weapon-bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: auto;
+            margin-bottom: 10px;
+        }
+
+        .weapon-bar {
+            display: flex;
+            gap: 15px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .weapon-slot {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            border: 3px solid #cbd5e1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .weapon-slot.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: translateY(-5px);
+            box-shadow: 0 4px 0 #2563eb;
+        }
+
+        .weapon-slot.disabled {
+            opacity: 0.5;
+            filter: grayscale(100%);
+            cursor: not-allowed;
+        }
+
+        /* 閃爍提示 */
+        .flash-msg {
+            color: #a855f7;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 0 #fff;
+            animation: blink 1s infinite;
+            display: none;
+        }
+        @keyframes blink {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .action-group {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            margin-bottom: 10px;
+        }
+        .action-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            color: white;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .action-btn:active { transform: scale(0.95); }
+
+        #btn-shoot { background: #3b82f6; border: 4px solid #2563eb; }
+        #btn-build { background: #10b981; border: 4px solid #059669; }
+
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+        }
+        .modal-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            max-width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 4px solid #3b82f6;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .btn-green {
+            background: #22c55e; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; margin: 5px;
+            border-bottom: 4px solid #15803d;
+        }
+        .btn-green:active { border-bottom: 0; transform: translateY(4px); }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="p-4 flex justify-between items-start w-full pointer-events-none">
+            <div>
+                <h1 class="text-3xl font-black hud-text text-blue-700 tracking-wider drop-shadow-lg">水教官的大冒險</h1>
+                <p class="text-sm font-bold text-gray-600 hud-text">清洗髒汙、放置水管，小心細菌！</p>
+                <div class="mt-2 flex items-center gap-4">
+                    <div class="text-red-500 font-bold hud-text text-xl" id="hp-display">HP: ❤️❤️❤️</div>
+                    <div class="text-yellow-500 font-bold hud-text text-xl flex items-center gap-1">
+                        💰 <span id="coin-display">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xl font-bold text-blue-500 hud-text" id="score-display">覆蓋率: 0%</div>
+                <div class="text-sm font-bold text-gray-400 hud-text" id="time-display">00:00</div>
+
+                <div id="desktop-hints" class="hidden mt-2 flex flex-col items-end gap-2 lg:flex">
+                    <div class="bg-green-600 text-white text-xs px-2 py-1 rounded shadow">
+                        按 B 建造實體水管 (免費)
+                    </div>
+                    <div class="bg-blue-600 text-white text-xs px-2 py-1 rounded shadow">
+                        按 空白鍵 射擊
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-area">
+            <div class="d-pad">
+                <div class="d-btn d-up" id="btn-up">▲</div>
+                <div class="d-btn d-left" id="btn-left">◀</div>
+                <div class="d-btn d-right" id="btn-right">▶</div>
+                <div class="d-btn d-down" id="btn-down">▼</div>
+            </div>
+
+            <!-- 武器切換選單 (置中) -->
+            <div class="weapon-bar-container">
+                <div id="gun-hint" class="flash-msg">已獲得消毒槍！點擊切換</div>
+                <div class="weapon-bar">
+                    <div class="weapon-slot active" id="slot-normal" onclick="switchWeapon('normal')">
+                        💦
+                    </div>
+                    <div class="weapon-slot disabled" id="slot-super" onclick="switchWeapon('super')">
+                        🔫
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-group">
+                <div class="action-btn mobile-btn" id="btn-build">🔨</div>
+                <div class="action-btn mobile-btn" id="btn-shoot">🔥</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 結算視窗 -->
+    <div id="game-over-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 class="text-4xl font-black mb-2 text-gray-800" id="modal-title">GAME OVER</h2>
+            <p class="text-gray-600 mb-6 font-bold" id="modal-message">...</p>
+            <button onclick="restartGame()" class="btn-green text-xl shadow-lg">
+                再來一次
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- 遊戲常數 ---
+        const TILE_SIZE = 64;
+        const PLAYER_SIZE = 48;
+        const COLORS = {
+            bg: '#f0fdf4',
+            grid: '#dcfce7',
+            pipeMetal: '#94a3b8',
+            pipeDirty: '#854d0e',
+            pipeClean: '#3b82f6',
+            woodDark: '#713f12',
+            woodLight: '#a16207',
+            water: '#60a5fa',
+            disinfectant: '#a855f7',
+            blocked: '#64748b',
+            bacteria: '#16a34a',
+            gold: '#fbbf24',
+            // 水教官配色
+            skin: '#fcd34d',
+            shirt: '#16a34a', // 綠色排汗衫
+            pants: '#1e3a8a', // 牛仔褲
+            glasses: '#000000'
+        };
+
+        // --- 遊戲狀態 ---
+        let gameState = {
+            running: false,
+            time: 0,
+            lastFrameTime: 0,
+            coins: 0,
+            hasGun: false,
+            currentWeapon: 'normal',
+            coverage: 0,
+            bacteriaCount: 0, // 已生成的細菌總數
+            maxBacteria: 10   // 最大細菌數
+        };
+
+        let keys = {};
+
+        // --- 實體 ---
+        let player;
+        let obstacles = [];
+        let enemies = [];
+        let projectiles = [];
+        let particles = [];
+
+        let mapGrid = [];
+        let mapRows = 0;
+        let mapCols = 0;
+
+        let uiElements = {
+            hp: document.getElementById('hp-display'),
+            coins: document.getElementById('coin-display'),
+            score: document.getElementById('score-display'),
+            time: document.getElementById('time-display'),
+            modalOver: document.getElementById('game-over-modal'),
+            title: document.getElementById('modal-title'),
+            msg: document.getElementById('modal-message'),
+            slotNormal: document.getElementById('slot-normal'),
+            slotSuper: document.getElementById('slot-super'),
+            gunHint: document.getElementById('gun-hint')
+        };
+
+        function checkCollision(rect1, rect2) {
+            return (rect1.x < rect2.x + rect2.w &&
+                    rect1.x + rect1.w > rect2.x &&
+                    rect1.y < rect2.y + rect2.h &&
+                    rect1.y + rect1.h > rect2.y);
+        }
+
+        class Particle {
+            constructor(x, y, type) {
+                this.x = x; this.y = y; this.type = type; this.life = 1.0;
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 3;
+
+                if (type === 'coin') {
+                    this.vx = 0; this.vy = -1; this.decay = 0.02; this.size = 8; this.color = COLORS.gold;
+                } else if (type === 'smoke') {
+                    this.vx = Math.cos(angle) * speed * 0.5; this.vy = Math.sin(angle) * speed * 0.5 - 1;
+                    this.decay = 0.04; this.size = Math.random() * 8 + 4; this.color = '#fff';
+                } else if (type === 'build') {
+                    this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+                    this.decay = 0.05; this.size = Math.random() * 4 + 2; this.color = COLORS.pipeClean;
+                } else if (type === 'kill') {
+                    this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+                    this.decay = 0.05; this.size = Math.random() * 6 + 3; this.color = COLORS.bacteria;
+                } else {
+                    this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+                    this.decay = 0.05; this.size = Math.random() * 4 + 2;
+                    this.color = type === 'water' ? '#bae6fd' : COLORS.pipeDirty;
+                }
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.life -= this.decay; }
+            draw(ctx) {
+                ctx.save(); ctx.globalAlpha = this.life; ctx.fillStyle = this.color;
+                if (this.type === 'coin') { ctx.font = "20px Arial"; ctx.fillText("💰", this.x, this.y); }
+                else { ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
+                ctx.restore();
+            }
+        }
+
+        class Obstacle {
+            constructor(c, r, type, orientation = 'horizontal', isClean = false) {
+                this.c = c; this.r = r;
+                this.x = c * TILE_SIZE; this.y = r * TILE_SIZE;
+                this.w = TILE_SIZE; this.h = TILE_SIZE;
+                this.type = type;
+                this.orientation = orientation;
+                this.dirtLevel = isClean ? 0 : 100;
+                this.markedForDeletion = false;
+                this.isCleanBuilt = isClean;
+                this.tempPassable = isClean; // 新建的乾淨水管暫時可通行
+
+                this.openings = [];
+                if (this.type === 'pipe') {
+                    this.visualX = this.x; this.visualY = this.y;
+                    this.visualW = this.w; this.visualH = this.h;
+                    const openingDepth = 8;
+                    const openingWidth = 24; // 加寬洞口判定，讓玩家更容易對準
+
+                    if (this.orientation === 'horizontal') {
+                        this.visualY += 12; this.visualH -= 24;
+                        this.openings.push({x: this.x, y: this.y + this.h/2 - openingWidth/2, w: openingDepth, h: openingWidth, dir: 'left'});
+                        this.openings.push({x: this.x + this.w - openingDepth, y: this.y + this.h/2 - openingWidth/2, w: openingDepth, h: openingWidth, dir: 'right'});
+                    } else {
+                        this.visualX += 12; this.visualW -= 24;
+                        this.openings.push({x: this.x + this.w/2 - openingWidth/2, y: this.y, w: openingWidth, h: openingDepth, dir: 'up'});
+                        this.openings.push({x: this.x + this.w/2 - openingWidth/2, y: this.y + this.h - openingDepth, w: openingWidth, h: openingDepth, dir: 'down'});
+                    }
+                }
+            }
+
+            checkHit(projectile) {
+                if (this.type === 'fence' || this.isCleanBuilt) return 'blocked';
+                if (!checkCollision(projectile, this)) return false;
+
+                for (let op of this.openings) {
+                    if (checkCollision(projectile, op)) {
+                        let correctDir = false;
+                        if (op.dir === 'left' && projectile.vx > 0) correctDir = true;
+                        if (op.dir === 'right' && projectile.vx < 0) correctDir = true;
+                        if (op.dir === 'up' && projectile.vy > 0) correctDir = true;
+                        if (op.dir === 'down' && projectile.vy < 0) correctDir = true;
+
+                        if (correctDir) {
+                            this.clean(34);
+                            return 'cleaned';
+                        }
+                    }
+                }
+                return 'blocked';
+            }
+
+            clean(amount) {
+                if (this.markedForDeletion || this.isCleanBuilt) return;
+                this.dirtLevel = Math.max(0, this.dirtLevel - amount);
+                for(let i=0; i<3; i++) {
+                     let px = this.x + TILE_SIZE/2; let py = this.y + TILE_SIZE/2;
+                     particles.push(new Particle(px, py, 'dirt'));
+                }
+                if (this.dirtLevel <= 0) {
+                    this.markedForDeletion = true;
+                    particles.push(new Particle(this.x + this.w/2, this.y, 'coin'));
+                    gameState.coins++;
+                    checkAutoBuy(); // 檢查是否購買槍
+                    updateUI();
+                    for(let i=0; i<6; i++) {
+                        let px = this.x + Math.random()*this.w; let py = this.y + Math.random()*this.h;
+                        particles.push(new Particle(px, py, 'smoke'));
+                    }
+                }
+            }
+
+            draw(ctx) {
+                if (this.type === 'fence') {
+                    ctx.fillStyle = COLORS.woodDark;
+                    ctx.fillRect(this.x + 10, this.y + 5, 10, this.h - 10);
+                    ctx.fillRect(this.x + this.w - 20, this.y + 5, 10, this.h - 10);
+                    ctx.fillStyle = COLORS.woodLight;
+                    ctx.fillRect(this.x + 5, this.y + 15, this.w - 10, 12);
+                    ctx.fillRect(this.x + 5, this.y + this.h - 25, this.w - 10, 12);
+                } else {
+                    ctx.save();
+                    if (this.tempPassable) ctx.globalAlpha = 0.5; // 剛放置時半透明
+
+                    ctx.fillStyle = '#475569';
+                    ctx.fillRect(this.visualX, this.visualY, this.visualW, this.visualH);
+
+                    ctx.fillStyle = this.isCleanBuilt ? COLORS.pipeClean : COLORS.pipeMetal;
+                    ctx.fillRect(this.visualX+4, this.visualY+4, this.visualW-8, this.visualH-8);
+
+                    if (this.dirtLevel > 0) {
+                        let alpha = this.dirtLevel / 100;
+                        ctx.fillStyle = `rgba(133, 77, 14, ${alpha})`;
+                        ctx.fillRect(this.visualX+4, this.visualY+4, this.visualW-8, this.visualH-8);
+                    }
+
+                    ctx.fillStyle = this.isCleanBuilt ? '#60a5fa' : COLORS.gold;
+                    this.openings.forEach(op => {
+                        ctx.fillRect(op.x, op.y, op.w, op.h);
+                        if (!this.isCleanBuilt) {
+                            ctx.strokeStyle = '#b45309'; ctx.lineWidth = 2;
+                            ctx.strokeRect(op.x, op.y, op.w, op.h);
+                        }
+                    });
+                    ctx.restore();
+                }
+            }
+        }
+
+        class Bacteria {
+            constructor(c, r) {
+                this.w = 40; this.h = 40;
+                this.x = c * TILE_SIZE + (TILE_SIZE - this.w)/2;
+                this.y = r * TILE_SIZE + (TILE_SIZE - this.h)/2;
+                this.speed = 2.5; this.vx = 0; this.vy = 0; this.active = true;
+                this.chooseDirection(c, r);
+            }
+            update() {
+                if (!this.active) return;
+                let cx = this.x + this.w/2; let cy = this.y + this.h/2;
+                let cellX = Math.floor(cx / TILE_SIZE); let cellY = Math.floor(cy / TILE_SIZE);
+                let centerX = cellX * TILE_SIZE + TILE_SIZE/2; let centerY = cellY * TILE_SIZE + TILE_SIZE/2;
+
+                if (Math.abs(cx - centerX) < 4 && Math.abs(cy - centerY) < 4) {
+                    if (Math.random() < 0.3 || this.isBlocked(cellX, cellY, Math.sign(this.vx), Math.sign(this.vy))) {
+                        this.x = centerX - this.w/2; this.y = centerY - this.h/2;
+                        this.chooseDirection(cellX, cellY);
+                    }
+                }
+                this.x += this.vx; this.y += this.vy;
+            }
+            isBlocked(c, r, dx, dy) {
+                let nextC = c + dx; let nextR = r + dy;
+                if (nextC < 0 || nextC >= mapCols || nextR < 0 || nextR >= mapRows) return true;
+                if (mapGrid[nextR][nextC] === 1) {
+                    // 檢查是否是剛放置的可通行水管，細菌也視其為障礙物嗎？
+                    // 這裡設定細菌不能穿過任何水管
+                    return true;
+                }
+                return false;
+            }
+            chooseDirection(currC, currR) {
+                let dirs = [{x:1, y:0}, {x:-1, y:0}, {x:0, y:1}, {x:0, y:-1}];
+                dirs.sort(() => Math.random() - 0.5);
+                for (let d of dirs) {
+                    if (!this.isBlocked(currC, currR, d.x, d.y)) {
+                        this.vx = d.x * this.speed; this.vy = d.y * this.speed; return;
+                    }
+                }
+                this.vx = 0; this.vy = 0;
+            }
+            die() {
+                this.active = false;
+                for(let i=0; i<6; i++) {
+                    let px = this.x + Math.random()*this.w; let py = this.y + Math.random()*this.h;
+                    particles.push(new Particle(px, py, 'kill'));
+                }
+            }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x + this.w/2, this.y + this.h/2);
+                ctx.fillStyle = COLORS.bacteria;
+                ctx.beginPath(); ctx.arc(0, -5, 15, Math.PI, 0); ctx.lineTo(15, 15); ctx.lineTo(-15, 15); ctx.closePath(); ctx.fill();
+                let walkOffset = Math.sin(Date.now() / 80) * 3;
+                ctx.fillRect(-10, 15, 6, 6 + walkOffset); ctx.fillRect(4, 15, 6, 6 - walkOffset);
+                ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(-5, -5, 5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(5, -5, 5, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(-5, -5, 2, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(5, -5, 2, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = 'black'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(-2, -6); ctx.stroke(); ctx.beginPath(); ctx.moveTo(10, -10); ctx.lineTo(2, -6); ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        class Player {
+            constructor() {
+                this.w = PLAYER_SIZE; this.h = 60; // 稍微高一點
+                this.x = TILE_SIZE * 1.5 - this.w/2; this.y = TILE_SIZE * 1.5 - this.h/2;
+                this.speed = 4; this.hp = 3; this.invincibleTimer = 0; this.facing = {x: 0, y: 1}; this.shootCooldown = 0;
+            }
+            update() {
+                // 更新半透明水管的狀態
+                obstacles.forEach(obs => {
+                    if (obs.tempPassable) {
+                        // 檢查玩家是否還在該水管內
+                        if (!checkCollision(this, obs)) {
+                            // 如果玩家已經不再接觸，則取消可通行狀態
+                            obs.tempPassable = false;
+                        }
+                    }
+                });
+
+                if (this.invincibleTimer > 0) this.invincibleTimer--;
+                let dx = 0; let dy = 0;
+                if (keys['w'] || keys['ArrowUp']) dy = -1; if (keys['s'] || keys['ArrowDown']) dy = 1;
+                if (keys['a'] || keys['ArrowLeft']) dx = -1; if (keys['d'] || keys['ArrowRight']) dx = 1;
+
+                if (dx !== 0 || dy !== 0) {
+                    this.facing = {x: dx || 0, y: dy || 0};
+                    if (dx !== 0) {
+                        let nextX = this.x + dx * this.speed;
+                        if (!this.checkWallCollision(nextX, this.y)) this.x = nextX;
+                        else {
+                             let gridY = Math.round(this.y / TILE_SIZE) * TILE_SIZE + (TILE_SIZE - this.h)/2;
+                             if (Math.abs(gridY - this.y) < 20) this.y += Math.sign(gridY - this.y) * this.speed;
+                        }
+                    }
+                    if (dy !== 0) {
+                        let nextY = this.y + dy * this.speed;
+                        if (!this.checkWallCollision(this.x, nextY)) this.y = nextY;
+                        else {
+                            let gridX = Math.round(this.x / TILE_SIZE) * TILE_SIZE + (TILE_SIZE - this.w)/2;
+                            if (Math.abs(gridX - this.x) < 20) this.x += Math.sign(gridX - this.x) * this.speed;
+                        }
+                    }
+                }
+                if (this.shootCooldown > 0) this.shootCooldown--;
+                if (keys[' '] && this.shootCooldown <= 0) this.shoot();
+
+                if (this.invincibleTimer <= 0) {
+                    let hitRect = {x: this.x+8, y: this.y+8, w: this.w-16, h: this.h-16};
+                    for (let bug of enemies) {
+                        if (checkCollision(hitRect, bug)) { this.takeDamage(bug); break; }
+                    }
+                }
+            }
+            shoot() {
+                let shootDir = {x:0, y:0};
+                if (Math.abs(this.facing.x) > Math.abs(this.facing.y)) shootDir.x = Math.sign(this.facing.x);
+                else shootDir.y = Math.sign(this.facing.y) || 1;
+
+                let isDisinfect = (gameState.currentWeapon === 'super' && gameState.hasGun);
+
+                projectiles.push(new WaterProjectile(
+                    this.x + this.w/2, this.y + this.h/2, shootDir.x, shootDir.y, isDisinfect
+                ));
+                this.shootCooldown = 15;
+            }
+            build() {
+                let c = Math.floor((this.x + this.w/2) / TILE_SIZE);
+                let r = Math.floor((this.y + this.h/2) / TILE_SIZE);
+                if (mapGrid[r][c] === 0) {
+                    addObstacle(c, r, 'pipe', Math.random()>0.5?'horizontal':'vertical', true);
+                    for(let i=0; i<5; i++) {
+                        let px = c*TILE_SIZE + Math.random()*TILE_SIZE; let py = r*TILE_SIZE + Math.random()*TILE_SIZE;
+                        particles.push(new Particle(px, py, 'build'));
+                    }
+                    checkWin();
+                }
+            }
+            checkWallCollision(x, y) {
+                // 先建立一個模擬的 Rect
+                let testRect = {x: x, y: y, w: this.w, h: this.h};
+
+                // 檢查所有障礙物
+                for (let obs of obstacles) {
+                    if (obs.tempPassable) continue; // 如果是剛放置且可通行的，忽略碰撞
+                    if (checkCollision(testRect, obs)) return true;
+                }
+
+                // 檢查邊界
+                if (x < 0 || x + this.w > canvas.width || y < 0 || y + this.h > canvas.height) return true;
+
+                return false;
+            }
+            takeDamage(sourceBug) {
+                this.hp--; this.invincibleTimer = 120; updateUI();
+                ctx.fillStyle = 'rgba(255,50,50,0.5)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                if (sourceBug) {
+                    let centerX = this.x + this.w/2; let centerY = this.y + this.h/2;
+                    let bugX = sourceBug.x + sourceBug.w/2; let bugY = sourceBug.y + sourceBug.h/2;
+                    let dx = centerX - bugX; let dy = centerY - bugY;
+                    let dist = Math.sqrt(dx*dx + dy*dy); if (dist === 0) { dx = 1; dist = 1; }
+                    let targetX = this.x + (dx/dist) * 60; let targetY = this.y + (dy/dist) * 60;
+                    if (!this.checkWallCollision(targetX, targetY)) { this.x = targetX; this.y = targetY; }
+                }
+                if (this.hp <= 0) endGame(false);
+            }
+            draw(ctx) {
+                if (this.invincibleTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
+                const cx = this.x + this.w/2; const cy = this.y + this.h/2;
+                ctx.save(); ctx.translate(cx, cy);
+
+                // --- 繪製 水教官 (高高瘦瘦，綠衣牛仔褲，黑框眼鏡，長方形臉) ---
+                let dir = 1;
+                if (this.facing.x < 0) dir = -1;
+                ctx.scale(dir, 1);
+
+                let w = 40; // 身體寬度
+                let h = 60; // 身體高度
+
+                // 牛仔褲
+                ctx.fillStyle = COLORS.pants;
+                ctx.fillRect(-10, 10, 20, 20);
+                // 雙腳
+                let walkOffset = Math.sin(Date.now() / 100) * 4;
+                if (this.facing.x === 0 && this.facing.y === 0) walkOffset = 0;
+                ctx.fillStyle = '#3e2723'; // 深棕鞋
+                ctx.fillRect(-10, 28 + walkOffset, 8, 6);
+                ctx.fillRect(2, 28 - walkOffset, 8, 6);
+
+                // 綠色排汗衫
+                ctx.fillStyle = COLORS.shirt;
+                ctx.fillRect(-12, -15, 24, 25);
+                // 手臂
+                ctx.fillRect(-16, -15, 4, 18);
+                ctx.fillRect(12, -15, 4, 18);
+                // 手
+                ctx.fillStyle = COLORS.skin;
+                ctx.fillRect(-16, 3, 4, 5);
+                ctx.fillRect(12, 3, 4, 5);
+
+                // 頭部 (長方形臉)
+                ctx.fillStyle = COLORS.skin;
+                ctx.fillRect(-10, -35, 20, 22);
+
+                // 頭髮 (棕色短髮)
+                ctx.fillStyle = '#3e2723';
+                ctx.fillRect(-10, -38, 20, 6);
+                ctx.fillRect(-12, -35, 2, 10); // 鬢角
+
+                // 黑框眼鏡
+                ctx.strokeStyle = COLORS.glasses;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-8, -28, 6, 4); // 左鏡片
+                ctx.strokeRect(2, -28, 6, 4);  // 右鏡片
+                ctx.beginPath(); ctx.moveTo(-2, -26); ctx.lineTo(2, -26); ctx.stroke(); // 鼻樑架
+
+                // 眼睛
+                ctx.fillStyle = 'black';
+                ctx.fillRect(-6, -27, 2, 2);
+                ctx.fillRect(4, -27, 2, 2);
+
+                // 微笑
+                ctx.beginPath(); ctx.moveTo(-4, -18); ctx.quadraticCurveTo(0, -15, 4, -18); ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        class WaterProjectile {
+            constructor(x, y, dx, dy, isDisinfectant) {
+                this.x = x; this.y = y;
+                this.w = 6; this.h = 6;
+                this.vx = dx * 8; this.vy = dy * 8;
+                this.active = true;
+                this.isDisinfectant = isDisinfectant;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.active = false;
+                if (!this.active) return;
+
+                let c = Math.floor(this.x / TILE_SIZE); let r = Math.floor(this.y / TILE_SIZE);
+                let hitPipe = obstacles.find(p => p.c === c && p.r === r);
+                if (hitPipe) {
+                    let result = hitPipe.checkHit(this);
+                    if (result === 'cleaned') {
+                        this.active = false;
+                        for(let i=0; i<4; i++) particles.push(new Particle(this.x, this.y, 'water'));
+                    } else if (result === 'blocked') {
+                        this.active = false;
+                        for(let i=0; i<3; i++) particles.push(new Particle(this.x, this.y, 'blocked'));
+                    }
+                }
+                for (let bug of enemies) {
+                    if (checkCollision(this, bug)) {
+                        this.active = false;
+                        if (this.isDisinfectant) {
+                            bug.die();
+                            loseGun();
+                        } else {
+                            bug.x += this.vx * 0.5; bug.y += this.vy * 0.5;
+                            for(let i=0; i<3; i++) particles.push(new Particle(this.x, this.y, 'water'));
+                        }
+                        return;
+                    }
+                }
+            }
+            draw(ctx) {
+                ctx.fillStyle = this.isDisinfectant ? COLORS.disinfectant : COLORS.water;
+                ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = 'white'; ctx.lineWidth = 1; ctx.stroke();
+            }
+        }
+
+        // --- 核心邏輯 ---
+        function initGame() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            mapCols = Math.floor(canvas.width / TILE_SIZE); mapRows = Math.floor(canvas.height / TILE_SIZE);
+            if (mapCols % 2 === 0) mapCols--; if (mapRows % 2 === 0) mapRows--;
+
+            obstacles = []; enemies = []; projectiles = []; particles = [];
+            gameState.time = 0; gameState.coins = 0; gameState.running = true;
+            gameState.hasGun = false; gameState.currentWeapon = 'normal';
+            gameState.coverage = 0; gameState.bacteriaCount = 0;
+
+            generateLevel(mapCols, mapRows);
+            player = new Player();
+            updateUI();
+            uiElements.modalOver.style.display = 'none';
+            uiElements.gunHint.style.display = 'none';
+            requestAnimationFrame(gameLoop);
+        }
+
+        function generateLevel(cols, rows) {
+            mapGrid = Array(rows).fill().map(() => Array(cols).fill(0));
+            obstacles = [];
+            for (let c = 0; c < cols; c++) { addObstacle(c, 0, 'fence'); addObstacle(c, rows-1, 'fence'); }
+            for (let r = 1; r < rows-1; r++) { addObstacle(0, r, 'fence'); addObstacle(cols-1, r, 'fence'); }
+            let safeZone = {r: 4, c: 4};
+            for (let r = 2; r < rows - 2; r += 2) {
+                for (let c = 2; c < cols - 2; c += 2) {
+                    if (r < safeZone.r && c < safeZone.c) continue;
+                    let rand = Math.random();
+                    if (rand < 0.4) addObstacle(c, r, 'pipe', Math.random()>0.5?'horizontal':'vertical');
+                }
+            }
+        }
+
+        function addObstacle(c, r, type, orientation = 'horizontal', isClean = false) {
+            mapGrid[r][c] = 1;
+            obstacles.push(new Obstacle(c, r, type, orientation, isClean));
+        }
+
+        function switchWeapon(type) {
+            if (type === 'super' && !gameState.hasGun) return;
+            gameState.currentWeapon = type;
+            updateUI();
+        }
+
+        function loseGun() {
+            gameState.hasGun = false;
+            gameState.currentWeapon = 'normal';
+            updateUI();
+        }
+
+        function checkAutoBuy() {
+            if (gameState.coins >= 5 && !gameState.hasGun) {
+                gameState.coins -= 5;
+                gameState.hasGun = true;
+                // 不自動切換，只給提示
+                uiElements.gunHint.style.display = 'block';
+                setTimeout(() => {
+                    uiElements.gunHint.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function spawnEnemy() {
+            if (gameState.bacteriaCount >= gameState.maxBacteria) return; // 總數限制
+
+            let maxAttempts = 10;
+            for(let i=0; i<maxAttempts; i++) {
+                let c = Math.floor(Math.random() * (mapCols - 2)) + 1;
+                let r = Math.floor(Math.random() * (mapRows - 2)) + 1;
+                if (mapGrid[r][c] === 0) {
+                     let dx = c*TILE_SIZE - player.x; let dy = r*TILE_SIZE - player.y;
+                     if (Math.sqrt(dx*dx+dy*dy) > 300) {
+                         enemies.push(new Bacteria(c, r));
+                         gameState.bacteriaCount++;
+                         let px = c * TILE_SIZE + TILE_SIZE/2; let py = r * TILE_SIZE + TILE_SIZE/2;
+                         for(let j=0; j<8; j++) particles.push(new Particle(px, py, 'kill'));
+                         break;
+                     }
+                }
+            }
+        }
+
+        function spawnDirtyPipe() {
+            let maxAttempts = 5;
+            for(let i=0; i<maxAttempts; i++) {
+                let c = Math.floor(Math.random() * (mapCols - 2)) + 1;
+                let r = Math.floor(Math.random() * (mapRows - 2)) + 1;
+                if (mapGrid[r][c] === 0 && Math.abs(player.x/TILE_SIZE - c) > 1) {
+                     addObstacle(c, r, 'pipe', Math.random()>0.5?'horizontal':'vertical');
+                     let px = c * TILE_SIZE + TILE_SIZE/2; let py = r * TILE_SIZE + TILE_SIZE/2;
+                     for(let j=0; j<8; j++) particles.push(new Particle(px, py, 'dirt'));
+                     break;
+                }
+            }
+        }
+
+        function checkWin() {
+            let cleanCount = obstacles.filter(p => p.isCleanBuilt).length;
+            let totalInner = (mapRows - 2) * (mapCols - 2);
+            let coverage = Math.floor((cleanCount / totalInner) * 100);
+            gameState.coverage = coverage;
+            uiElements.score.innerText = `覆蓋率: ${coverage}%`;
+            if (coverage >= 90) endGame(true);
+        }
+
+        function updateUI() {
+            uiElements.hp.innerText = `HP: ${"❤️".repeat(player.hp)}`;
+            uiElements.coins.innerText = gameState.coins;
+
+            if (gameState.currentWeapon === 'normal') {
+                uiElements.slotNormal.className = 'weapon-slot active';
+                uiElements.slotSuper.className = gameState.hasGun ? 'weapon-slot' : 'weapon-slot disabled';
+            } else {
+                uiElements.slotNormal.className = 'weapon-slot';
+                uiElements.slotSuper.className = 'weapon-slot active';
+            }
+        }
+
+        function endGame(win) {
+            gameState.running = false;
+            uiElements.modalOver.style.display = 'flex';
+            if (win) {
+                uiElements.title.innerText = "任務完成！";
+                uiElements.title.className = "text-5xl font-black mb-2 text-green-500 drop-shadow-md";
+                uiElements.msg.innerText = `水教官成功淨化了這片區域！`;
+            } else {
+                uiElements.title.innerText = "任務失敗";
+                uiElements.title.className = "text-5xl font-black mb-2 text-red-600 drop-shadow-md";
+                uiElements.msg.innerText = `最終覆蓋率: ${gameState.coverage}%`;
+            }
+        }
+
+        window.restartGame = initGame;
+
+        function gameLoop(timestamp) {
+            if (!gameState.running) return;
+
+            if (timestamp - gameState.lastFrameTime >= 1000) {
+                gameState.time++;
+                let mins = Math.floor(gameState.time / 60).toString().padStart(2, '0');
+                let secs = (gameState.time % 60).toString().padStart(2, '0');
+                uiElements.time.innerText = `${mins}:${secs}`;
+
+                let spawnInterval = 5; if (gameState.time > 30) spawnInterval = 3; if (gameState.time > 60) spawnInterval = 2;
+                if (gameState.time % spawnInterval === 0) spawnEnemy();
+
+                let pipeInterval = 4;
+                if (gameState.time % pipeInterval === 0) spawnDirtyPipe();
+
+                gameState.lastFrameTime = timestamp;
+            }
+
+            obstacles.forEach(p => { if (p.markedForDeletion) mapGrid[p.r][p.c] = 0; });
+            obstacles = obstacles.filter(p => !p.markedForDeletion);
+            enemies = enemies.filter(e => e.active);
+
+            player.update();
+            projectiles.forEach(p => p.update());
+            projectiles = projectiles.filter(p => p.active);
+            enemies.forEach(e => e.update());
+            particles.forEach(p => p.update());
+            particles = particles.filter(p => p.life > 0);
+
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function draw() {
+            ctx.fillStyle = COLORS.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            for (let r = 0; r < mapRows; r++) {
+                for (let c = 0; c < mapCols; c++) {
+                    if ((r + c) % 2 === 0) {
+                        ctx.fillStyle = COLORS.grid; ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.1)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+            obstacles.forEach(p => p.draw(ctx));
+            ctx.restore();
+
+            enemies.forEach(e => e.draw(ctx));
+            projectiles.forEach(p => p.draw(ctx));
+            player.draw(ctx);
+            particles.forEach(p => p.draw(ctx));
+        }
+
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if (e.key.toLowerCase() === 'b') player.build();
+            if (e.key === '1') switchWeapon('normal');
+            if (e.key === '2') switchWeapon('super');
+        });
+        window.addEventListener('keyup', e => keys[e.key] = false);
+
+        const bindTouch = (id, key) => {
+            const btn = document.getElementById(id);
+            const setKey = (val) => { keys[key] = val; };
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); setKey(true); });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); setKey(false); });
+            btn.addEventListener('mousedown', () => setKey(true));
+            btn.addEventListener('mouseup', () => setKey(false));
+        };
+        bindTouch('btn-up', 'ArrowUp'); bindTouch('btn-down', 'ArrowDown');
+        bindTouch('btn-left', 'ArrowLeft'); bindTouch('btn-right', 'ArrowRight');
+        bindTouch('btn-shoot', ' ');
+        document.getElementById('btn-build').addEventListener('touchstart', (e) => { e.preventDefault(); player.build(); });
+        document.getElementById('btn-build').addEventListener('mousedown', () => player.build());
+
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+        initGame();
+
+    </script>
+</body>
+</html>
