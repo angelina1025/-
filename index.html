@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>戰鬥吧!水教官!!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* * 手機遊戲核心 CSS */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0f172a;
+            position: fixed;
+        }
+
+        #game-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        /* 狀態面板 */
+        .status-panel-left {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            display: flex;
+            gap: 12px;
+            z-index: 20;
+        }
+
+        .status-panel-center {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+        }
+
+        .stat-badge {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            font-size: 16px;
+            border: 2px solid #cbd5e1;
+            transform: skewX(-5deg);
+            pointer-events: auto;
+        }
+
+        /* 小地圖 */
+        #minimap-container {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 140px;
+            height: 140px;
+            background: #1e293b;
+            border: 3px solid #475569;
+            border-radius: 4px;
+            z-index: 20;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+        #minimap-canvas { width: 100%; height: 100%; display: block; }
+
+        /* 底部控制器 */
+        .controls-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 20px 30px 40px 30px;
+            pointer-events: auto;
+        }
+
+        .joystick-base {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            position: relative;
+            backdrop-filter: blur(4px);
+        }
+
+        .joystick-knob {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.5);
+            transition: transform 0.1s;
+        }
+        .joystick-knob.active { transition: none; }
+
+        .actions-cluster { display: flex; gap: 20px; align-items: flex-end; }
+
+        .btn-circle {
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            border: 2px solid rgba(255,255,255,0.3);
+            position: relative;
+            touch-action: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .btn-circle:active { transform: scale(0.92) translateY(4px); filter: brightness(0.9); }
+
+        #btn-shoot {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        }
+
+        #btn-mine {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            margin-bottom: 20px;
+        }
+
+        .badge-count {
+            position: absolute; top: -5px; right: -5px;
+            background: #f59e0b; color: #fff;
+            font-size: 12px; font-weight: bold;
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            border: 2px solid white;
+        }
+
+        #pc-controls-hint {
+            display: none;
+            position: absolute; top: 90px; left: 16px;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 12px; border-radius: 8px;
+            color: #e2e8f0; font-size: 14px;
+            pointer-events: none;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 15;
+        }
+        .key-badge {
+            display: inline-block;
+            background: #334155; color: #fff;
+            padding: 2px 6px; border-radius: 4px;
+            font-weight: bold; font-size: 12px;
+            margin: 0 2px; border-bottom: 2px solid #0f172a;
+        }
+
+        .modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+            display: flex; justify-content: center; align-items: center;
+            pointer-events: auto; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        .modal.show { opacity: 1; pointer-events: auto; }
+
+        .modal-content {
+            background: #f8fafc; width: 85%; max-width: 400px;
+            padding: 24px; border-radius: 24px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 4px solid #e2e8f0;
+        }
+        .modal.show .modal-content { transform: scale(1); }
+
+        .btn-primary {
+            background: linear-gradient(to bottom, #22c55e, #16a34a);
+            color: white; width: 100%; padding: 14px;
+            border-radius: 12px; font-size: 18px; font-weight: bold;
+            border: none; box-shadow: 0 6px 0 #14532d;
+            margin-top: 16px; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        .btn-primary:active { transform: translateY(4px); box-shadow: 0 2px 0 #14532d; }
+
+        .btn-line {
+            background: linear-gradient(to bottom, #06c755, #059b42);
+            box-shadow: 0 6px 0 #036b2d;
+        }
+        .btn-line:active { transform: translateY(4px); box-shadow: 0 2px 0 #036b2d; }
+
+        .btn-save {
+            background: linear-gradient(to bottom, #3b82f6, #2563eb);
+            box-shadow: 0 6px 0 #1e40af;
+        }
+        .btn-save:active { transform: translateY(4px); box-shadow: 0 2px 0 #1e40af; }
+
+        .floating-text {
+            position: absolute; font-weight: 900; pointer-events: none;
+            animation: floatUp 2.0s forwards;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            white-space: nowrap;
+            z-index: 100;
+        }
+        .dolo-text {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.8), 0 0 10px rgba(59, 130, 246, 0.5);
+            padding: 6px 14px;
+            border-radius: 30px;
+            background: rgba(30, 58, 138, 0.4);
+            backdrop-filter: blur(1px);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            15% { transform: translateY(-20px) scale(1.1); opacity: 1; }
+            80% { transform: translateY(-60px) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-80px) scale(0.9); opacity: 0; }
+        }
+
+        .objective-toast {
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            color: #f1f5f9; padding: 8px 20px;
+            border-radius: 30px; font-size: 13px; font-weight: bold;
+            pointer-events: none; opacity: 0.9;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 1px solid #334155;
+            white-space: nowrap;
+            z-index: 15;
+        }
+
+        .end-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0 25px 0;
+            font-size: 16px;
+            color: #475569;
+            font-weight: bold;
+        }
+        .end-stat-row {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+        .end-stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+            padding: 10px 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+        .end-date {
+            font-size: 14px;
+            color: #64748b;
+            font-family: monospace;
+            background: rgba(255,255,255,0.5);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="game-layer"></canvas>
+
+    <div id="ui-layer">
+        <div class="status-panel-left">
+            <div class="stat-badge text-red-600">
+                <span>❤️</span> <span id="hp-val">5</span>
+            </div>
+            <div class="stat-badge text-gray-700">
+                  <span>💣</span> <span id="mine-val">0</span>
+            </div>
+        </div>
+
+        <div class="status-panel-center">
+            <div class="stat-badge text-blue-600 w-fit">
+                ⏱️ <span id="time-val">00:00</span>
+            </div>
+        </div>
+
+        <div id="minimap-container">
+            <canvas id="minimap-canvas"></canvas>
+        </div>
+
+        <div id="pc-controls-hint">
+            <div class="mb-2 text-slate-400 font-bold border-b border-slate-700 pb-1">操作指南</div>
+            <div class="mb-1"><span class="key-badge">WASD</span> 移動</div>
+            <div class="mb-1"><span class="key-badge">SPACE</span> 射擊</div>
+            <div><span class="key-badge">B</span> 放地雷</div>
+        </div>
+
+        <div class="objective-toast" id="obj-text">
+            任務目標：清除細菌 (0/10)
+        </div>
+
+        <div class="controls-area">
+            <div class="joystick-base" id="joystick-zone">
+                <div class="joystick-knob" id="joystick-knob"></div>
+            </div>
+            <div class="actions-cluster">
+                <div class="btn-circle" id="btn-mine">
+                    💣
+                    <div class="badge-count" id="mine-count">0</div>
+                </div>
+                <div class="btn-circle" id="btn-shoot">
+                    💧
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="start-modal" class="modal show">
+        <div class="modal-content">
+            <div class="text-6xl mb-3">🚰</div>
+            <h1 class="text-3xl font-black text-slate-800 mb-2 tracking-tight">戰鬥吧!水教官!!</h1>
+            <p class="text-slate-500 mb-6 font-medium">Dolo 團隊專業技術支援</p>
+
+            <div class="bg-slate-100 p-5 rounded-2xl text-left text-sm text-slate-700 space-y-3 mb-6 border border-slate-200 shadow-inner">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-lg">🦠</div>
+                    <span>消滅 <strong class="text-red-600">10 隻細菌</strong></span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-lg">🔧</div>
+                    <span>使用水柱<strong class="text-blue-600">清洗 10 組管路</strong></span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-lg">🎁</div>
+                    <span>過關領取 <strong class="text-green-600">LINE 優惠券</strong></span>
+                </div>
+                <div id="dynamic-controls-hint" class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-300 text-xs text-gray-500 font-mono">
+                    正在偵測輸入裝置...
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="Game.start()">開始任務</button>
+        </div>
+    </div>
+
+    <div id="end-modal" class="modal">
+        <div class="modal-content">
+            <div id="end-icon" class="text-7xl mb-2">🏆</div>
+            <h2 id="end-title" class="text-4xl font-black text-slate-800 mb-2">任務完成</h2>
+            <p id="end-msg" class="text-slate-600 mb-4 font-bold text-lg">區域已淨化！</p>
+
+            <div id="end-stats-container" class="end-stats hidden">
+                <!-- JS 會填入內容 -->
+            </div>
+
+            <button id="btn-coupon" class="btn-primary btn-line hidden mb-4 text-xl py-4" onclick="openLineCoupon()">
+                🎁 領取 LINE 優惠券
+            </button>
+
+            <button id="btn-save-record" class="btn-primary btn-save hidden mb-4" onclick="saveResultImage()">
+                📸 儲存戰績卡
+            </button>
+
+            <button class="w-full py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors" onclick="Game.restart()">
+                再次挑戰
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const LINE_COUPON_URL = "https://lin.ee/eUHT4zO";
+        function openLineCoupon() { window.open(LINE_COUPON_URL, '_blank'); }
+
+        // --- 儲存戰績卡功能 ---
+        function saveResultImage() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 600;
+            canvas.height = 800;
+
+            // 1. 背景
+            ctx.fillStyle = '#f1f5f9';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 頂部裝飾條
+            const grad = ctx.createLinearGradient(0, 0, 0, 150);
+            grad.addColorStop(0, '#3b82f6');
+            grad.addColorStop(1, '#2563eb');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, 150);
+
+            // 2. 標題與圖示
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '80px Arial';
+            ctx.fillText(Game.lastWin ? '🏆' : '🦠', canvas.width/2, 110);
+
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 48px "Segoe UI", sans-serif';
+            ctx.fillText(Game.lastWin ? '任務完成！' : '任務失敗', canvas.width/2, 220);
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = '24px "Segoe UI", sans-serif';
+            ctx.fillText('戰鬥吧!水教官!!', canvas.width/2, 260);
+
+            // 3. 數據卡片
+            const drawCard = (y, label, value, color) => {
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 5;
+                ctx.fillRect(100, y, 400, 100);
+                ctx.shadowColor = 'transparent'; // reset
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '20px "Segoe UI", sans-serif';
+                ctx.fillText(label, canvas.width/2, y + 35);
+
+                ctx.fillStyle = color;
+                ctx.font = 'bold 40px "Segoe UI", sans-serif';
+                ctx.fillText(value, canvas.width/2, y + 80);
+            };
+
+            let mins = Math.floor(Game.timeElapsed/60).toString().padStart(2,'0');
+            let secs = Math.floor(Game.timeElapsed%60).toString().padStart(2,'0');
+
+            drawCard(320, '通關時間', `${mins}:${secs}`, '#2563eb');
+            drawCard(450, '剩餘血量', `${Game.player.hp} / 5`, '#dc2626');
+
+            // 4. 底部日期與浮水印
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '18px monospace';
+            ctx.fillText(dateStr, canvas.width/2, 650);
+
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 24px "Segoe UI", sans-serif';
+            ctx.fillText('DOLO 專業水管清潔', canvas.width/2, 750);
+
+            // 5. 下載
+            const link = document.createElement('a');
+            link.download = `水教官戰績_${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        const CONFIG = {
+            tileSize: 64,
+            playerSpeed: 250,
+            enemySpeed: 180,
+            enemyWanderSpeed: 50,
+            enemyAggroRange: 300,
+            totalEnemies: 10,
+            maxPipeStructures: 10,
+            cleanTimePerTile: 0.5,
+            dirtRegrowRate: 0.4,
+            colors: {
+                bg: '#334155',
+                floorLight: '#475569',
+                floorDark: '#334155',
+                wallTop: '#94a3b8',
+                wallSide: '#475569',
+                wallShadow: 'rgba(0,0,0,0.4)',
+                water: '#38bdf8',
+                lightwave: '#fef08a',
+                explosionBlue: '#60a5fa',
+                pipeBase: '#3b82f6',
+                pipeShadow: '#1e3a8a',
+                pipeHighlight: '#93c5fd',
+                pipeSpecular: '#ffffff',
+                connector: '#94a3b8',
+                connectorTop: '#cbd5e1',
+                sludgeBase: '#713f12',
+                sludgeDetail: '#a16207'
+            }
+        };
+
+        const SHAPES = [
+            [{c:0, r:0}, {c:1, r:0}],
+            [{c:0, r:0}, {c:0, r:1}],
+            [{c:0, r:0}, {c:1, r:0}, {c:2, r:0}],
+            [{c:0, r:0}, {c:0, r:1}, {c:0, r:2}],
+            [{c:0, r:0}, {c:1, r:0}, {c:0, r:1}],
+            [{c:0, r:0}, {c:1, r:0}, {c:1, r:1}],
+            [{c:1, r:1}, {c:0, r:1}, {c:2, r:1}, {c:1, r:0}, {c:1, r:2}],
+            [{c:0, r:0}, {c:1, r:0}, {c:2, r:0}, {c:1, r:1}]
+        ];
+
+        const Input = {
+            mode: 'touch',
+            keys: { w: false, a: false, s: false, d: false, space: false, b: false },
+            move: { x: 0, y: 0 },
+
+            init() {
+                window.addEventListener('keydown', e => this.onKey(e, true));
+                window.addEventListener('keyup', e => this.onKey(e, false));
+                this.initTouchButtons();
+                Joystick.init();
+                this.detectMode();
+                window.addEventListener('resize', () => this.detectMode());
+            },
+
+            detectMode() {
+                const hintEl = document.getElementById('dynamic-controls-hint');
+                const controlsArea = document.querySelector('.controls-area');
+                const pcHint = document.getElementById('pc-controls-hint');
+
+                const isDesktop = window.innerWidth >= 1024;
+
+                if (isDesktop) {
+                    this.mode = 'keyboard';
+                    if(controlsArea) controlsArea.style.display = 'none';
+                    if(pcHint) pcHint.style.display = 'block';
+                    if(hintEl) hintEl.innerHTML = `💻 電腦版模式：WASD 移動, 空白鍵射擊`;
+                } else {
+                    this.mode = 'touch';
+                    if(controlsArea) controlsArea.style.display = 'flex';
+                    if(pcHint) pcHint.style.display = 'none';
+                    if(hintEl) hintEl.innerHTML = `📱 手機版模式：使用虛擬搖桿移動`;
+                }
+            },
+
+            onKey(e, pressed) {
+                const k = e.key.toLowerCase();
+                if (k === ' ' || k === 'space') {
+                    if(pressed) e.preventDefault();
+                    this.keys.space = pressed;
+                }
+                if(k === 'w' || k === 'arrowup') this.keys.w = pressed;
+                if(k === 's' || k === 'arrowdown') this.keys.s = pressed;
+                if(k === 'a' || k === 'arrowleft') this.keys.a = pressed;
+                if(k === 'd' || k === 'arrowright') this.keys.d = pressed;
+                if(k === 'j') this.keys.space = pressed;
+                if((k === 'b' || k === 'k') && pressed && !this.keys.b) {
+                    if(Game.running) Game.player.placeMine();
+                }
+                if(k === 'b' || k === 'k') this.keys.b = pressed;
+            },
+
+            initTouchButtons() {
+                const btnShoot = document.getElementById('btn-shoot');
+                const btnMine = document.getElementById('btn-mine');
+
+                const startShoot = (e) => {
+                    e.preventDefault();
+                    if(!Game.running) return;
+                    Game.player.shoot();
+                    if(!this.shootInterval) {
+                        this.shootInterval = setInterval(() => Game.player.shoot(), 80);
+                    }
+                    btnShoot.style.transform = 'scale(0.9)';
+                };
+                const stopShoot = (e) => {
+                    e.preventDefault();
+                    if(this.shootInterval) {
+                        clearInterval(this.shootInterval);
+                        this.shootInterval = null;
+                    }
+                    btnShoot.style.transform = 'scale(1)';
+                };
+                btnShoot.addEventListener('touchstart', startShoot);
+                btnShoot.addEventListener('touchend', stopShoot);
+                btnShoot.addEventListener('mousedown', startShoot);
+                btnShoot.addEventListener('mouseup', stopShoot);
+
+                const placeMine = (e) => {
+                    e.preventDefault();
+                    if(!Game.running) return;
+                    Game.player.placeMine();
+                    btnMine.style.transform = 'scale(0.9)';
+                    setTimeout(() => btnMine.style.transform = 'scale(1)', 100);
+                };
+                btnMine.addEventListener('touchstart', placeMine);
+                btnMine.addEventListener('mousedown', placeMine);
+            },
+
+            update() {
+                if (this.mode === 'keyboard') {
+                    this.move.x = 0;
+                    this.move.y = 0;
+                    if (this.keys.a) this.move.x -= 1;
+                    if (this.keys.d) this.move.x += 1;
+                    if (this.keys.w) this.move.y -= 1;
+                    if (this.keys.s) this.move.y += 1;
+
+                    const len = Math.sqrt(this.move.x**2 + this.move.y**2);
+                    if(len > 0) {
+                        this.move.x /= len;
+                        this.move.y /= len;
+                    }
+                    if(this.keys.space && Game.running) Game.player.shoot();
+                } else {
+                    if (Joystick.active) {
+                        this.move.x = Joystick.vector.x;
+                        this.move.y = Joystick.vector.y;
+                    } else {
+                        this.move.x = 0;
+                        this.move.y = 0;
+                    }
+                }
+            }
+        };
+
+        const Joystick = {
+            active: false,
+            origin: { x: 0, y: 0 },
+            vector: { x: 0, y: 0 },
+            touchId: null,
+            radius: 60,
+
+            init() {
+                const zone = document.getElementById('joystick-zone');
+                const knob = document.getElementById('joystick-knob');
+
+                const startHandler = (e) => {
+                    e.preventDefault();
+                    const touch = e.changedTouches ? e.changedTouches[0] : e;
+                    this.touchId = e.changedTouches ? touch.identifier : 'mouse';
+                    this.active = true;
+                    const rect = zone.getBoundingClientRect();
+                    this.origin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                    this.updatePosition(touch.clientX, touch.clientY);
+                    knob.classList.add('active');
+                };
+
+                const moveHandler = (e) => {
+                    e.preventDefault();
+                    if(!this.active) return;
+                    let clientX, clientY;
+                    if(e.changedTouches) {
+                        for(let i=0; i<e.changedTouches.length; i++) {
+                            if(e.changedTouches[i].identifier === this.touchId) {
+                                clientX = e.changedTouches[i].clientX;
+                                clientY = e.changedTouches[i].clientY;
+                                break;
+                            }
+                        }
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+                    if(clientX !== undefined) this.updatePosition(clientX, clientY);
+                };
+
+                const endHandler = (e) => {
+                    e.preventDefault();
+                    if(e.changedTouches) {
+                        for(let i=0; i<e.changedTouches.length; i++) {
+                            if(e.changedTouches[i].identifier === this.touchId) {
+                                this.reset();
+                                break;
+                            }
+                        }
+                    } else {
+                        this.reset();
+                    }
+                };
+
+                zone.addEventListener('touchstart', startHandler);
+                zone.addEventListener('touchmove', moveHandler);
+                zone.addEventListener('touchend', endHandler);
+                zone.addEventListener('mousedown', startHandler);
+                window.addEventListener('mousemove', moveHandler);
+                window.addEventListener('mouseup', endHandler);
+            },
+
+            updatePosition(clientX, clientY) {
+                const knob = document.getElementById('joystick-knob');
+                let dx = clientX - this.origin.x;
+                let dy = clientY - this.origin.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                if (distance > this.radius) {
+                    const angle = Math.atan2(dy, dx);
+                    dx = Math.cos(angle) * this.radius;
+                    dy = Math.sin(angle) * this.radius;
+                }
+                this.vector.x = dx / this.radius;
+                this.vector.y = dy / this.radius;
+                knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            },
+
+            reset() {
+                this.active = false;
+                this.touchId = null;
+                this.vector = { x: 0, y: 0 };
+                const knob = document.getElementById('joystick-knob');
+                if(knob) {
+                    knob.style.transform = `translate(-50%, -50%)`;
+                    knob.classList.remove('active');
+                }
+            }
+        };
+
+        const Camera = {
+            x: 0, y: 0,
+            follow(target) {
+                if(!Game.mapCols) return;
+                this.x = target.x - canvas.width / 2;
+                this.y = target.y - canvas.height / 2;
+                const mapW = Game.mapCols * CONFIG.tileSize;
+                const mapH = Game.mapRows * CONFIG.tileSize;
+                this.x = Math.max(0, Math.min(this.x, mapW - canvas.width));
+                this.y = Math.max(0, Math.min(this.y, mapH - canvas.height));
+                if (mapW < canvas.width) this.x = -(canvas.width - mapW) / 2;
+                if (mapH < canvas.height) this.y = -(canvas.height - mapH) / 2;
+            }
+        };
+
+        const canvas = document.getElementById('game-layer');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimap-canvas');
+        const mmCtx = minimapCanvas.getContext('2d');
+
+        const Game = {
+            running: false,
+            lastTime: 0,
+            timeElapsed: 0,
+            mapCols: 25,
+            mapRows: 25,
+            grid: [],
+            entities: [],
+            particles: [],
+            obstacles: [],
+            mineCount: 0,
+            enemiesKilled: 0,
+            player: null,
+            lastWin: false,
+
+            init() {
+                this.resize();
+                Input.init();
+                window.addEventListener('resize', () => this.resize());
+            },
+
+            resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                ctx.imageSmoothingEnabled = false;
+                minimapCanvas.width = 150;
+                minimapCanvas.height = 150;
+            },
+
+            start() {
+                if (document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur();
+                }
+
+                document.getElementById('start-modal').classList.remove('show');
+                document.getElementById('end-modal').classList.remove('show');
+                this.running = true;
+                this.mineCount = 0;
+                this.timeElapsed = 0;
+                this.enemiesKilled = 0;
+                this.particles = [];
+                this.obstacles = [];
+                this.entities = [];
+                this.generateLevel();
+                this.player = new Player(CONFIG.tileSize * 2, CONFIG.tileSize * 2);
+                this.entities.push(this.player);
+                for(let i=0; i<CONFIG.totalEnemies; i++) this.spawnEnemy();
+                this.lastTime = performance.now();
+                requestAnimationFrame((t) => this.loop(t));
+                this.updateUI();
+            },
+
+            restart() { this.start(); },
+
+            generateLevel() {
+                this.grid = [];
+
+                // Init grid
+                for(let r=0; r<this.mapRows; r++) {
+                    let row = [];
+                    for(let c=0; c<this.mapCols; c++) {
+                        if(r===0 || r===this.mapRows-1 || c===0 || c===this.mapCols-1) {
+                            row.push(1);
+                            this.obstacles.push(new Wall(c*CONFIG.tileSize, r*CONFIG.tileSize));
+                        } else {
+                            row.push(0);
+                        }
+                    }
+                    this.grid.push(row);
+                }
+
+                let pipesPlaced = 0;
+                let attempts = 0;
+                while(pipesPlaced < CONFIG.maxPipeStructures && attempts < 200) {
+                    attempts++;
+                    let r = Math.floor(Math.random() * (this.mapRows - 4)) + 2;
+                    let c = Math.floor(Math.random() * (this.mapCols - 4)) + 2;
+
+                    if (r < 6 && c < 6) continue;
+
+                    const shapeTemplate = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+
+                    let canPlace = true;
+                    let segments = [];
+                    for(let block of shapeTemplate) {
+                        let targetR = r + block.r;
+                        let targetC = c + block.c;
+                        if(this.grid[targetR][targetC] !== 0) {
+                            canPlace = false;
+                            break;
+                        }
+                        segments.push({c: targetC, r: targetR});
+                    }
+
+                    if(canPlace) {
+                        const pipe = new Pipe(segments);
+                        this.obstacles.push(pipe);
+                        segments.forEach(s => this.grid[s.r][s.c] = 1);
+                        pipesPlaced++;
+                    }
+                }
+            },
+
+            spawnEnemy() {
+                let x, y, c, r;
+                let attempts = 0;
+                do {
+                    c = Math.floor(Math.random() * (this.mapCols - 2)) + 1;
+                    r = Math.floor(Math.random() * (this.mapRows - 2)) + 1;
+                    x = c * CONFIG.tileSize;
+                    y = r * CONFIG.tileSize;
+                    attempts++;
+                    let dist = Math.hypot(x - CONFIG.tileSize*2, y - CONFIG.tileSize*2);
+                    if (this.grid[r][c] === 0 && dist > 300) break;
+                } while (attempts < 50);
+
+                if (attempts < 50) {
+                    this.entities.push(new Enemy(x + 10, y + 10));
+                }
+            },
+
+            loop(now) {
+                if (!this.running) return;
+                const dt = (now - this.lastTime) / 1000;
+                this.lastTime = now;
+
+                Input.update();
+                this.update(dt);
+                this.draw();
+                requestAnimationFrame((t) => this.loop(t));
+            },
+
+            update(dt) {
+                this.timeElapsed += dt;
+                let mins = Math.floor(this.timeElapsed/60).toString().padStart(2,'0');
+                let secs = Math.floor(this.timeElapsed%60).toString().padStart(2,'0');
+                document.getElementById('time-val').innerText = `${mins}:${secs}`;
+
+                Camera.follow(this.player);
+
+                this.entities.forEach(e => e.update(dt));
+                this.obstacles.forEach(o => o.update(dt));
+                this.particles.forEach(p => p.update(dt));
+                this.particles = this.particles.filter(p => p.life > 0);
+
+                this.entities = this.entities.filter(e => !e.dead);
+                this.obstacles = this.obstacles.filter(o => !o.dead);
+
+                if (this.player.hp <= 0) this.gameOver(false);
+
+                const dirtyPipes = this.obstacles.filter(o => o instanceof Pipe && o.dirty).length;
+                const enemiesLeft = CONFIG.totalEnemies - this.enemiesKilled;
+
+                document.getElementById('obj-text').innerText = `剩餘細菌: ${enemiesLeft} | 髒水管: ${dirtyPipes}`;
+                if (enemiesLeft === 0 && dirtyPipes === 0) this.gameOver(true);
+            },
+
+            draw() {
+                const bgSize = CONFIG.tileSize;
+
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.save();
+                ctx.translate(-Camera.x, -Camera.y);
+
+                const startCol = Math.floor(Camera.x / CONFIG.tileSize);
+                const endCol = startCol + (canvas.width / CONFIG.tileSize) + 1;
+                const startRow = Math.floor(Camera.y / CONFIG.tileSize);
+                const endRow = startRow + (canvas.height / CONFIG.tileSize) + 1;
+
+                for (let r = startRow; r <= endRow; r++) {
+                    for (let c = startCol; c <= endCol; c++) {
+                        if (r >= 0 && r < this.mapRows && c >= 0 && c < this.mapCols) {
+                            if (this.grid[r] && this.grid[r][c] === 0) {
+                                const x = c * CONFIG.tileSize;
+                                const y = r * CONFIG.tileSize;
+                                ctx.fillStyle = (r+c)%2===0 ? CONFIG.colors.floorLight : CONFIG.colors.floorDark;
+                                ctx.fillRect(x, y, CONFIG.tileSize, CONFIG.tileSize);
+                                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                                ctx.fillRect(x, y, 2, CONFIG.tileSize);
+                                ctx.fillRect(x, y, CONFIG.tileSize, 2);
+                            }
+                        }
+                    }
+                }
+
+                const lightWaves = this.entities.filter(e => e instanceof LightWave);
+                lightWaves.forEach(w => w.draw(ctx));
+
+                const renderList = [...this.obstacles, ...this.entities.filter(e => !(e instanceof LightWave)), ...this.particles];
+                renderList.sort((a, b) => (a.y + (a.h || 0)) - (b.y + (b.h || 0)));
+
+                renderList.forEach(obj => obj.draw(ctx));
+                ctx.restore();
+                this.drawMinimap();
+            },
+
+            drawMinimap() {
+                mmCtx.fillStyle = '#0f172a';
+                mmCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+                const mapW = this.mapCols * CONFIG.tileSize;
+                const mapH = this.mapRows * CONFIG.tileSize;
+                const scaleX = minimapCanvas.width / mapW;
+                const scaleY = minimapCanvas.height / mapH;
+
+                this.obstacles.forEach(o => {
+                    if (o instanceof Pipe && o.dirty) {
+                        mmCtx.fillStyle = '#facc15';
+                        o.segments.forEach(s => {
+                            mmCtx.fillRect(s.c * CONFIG.tileSize * scaleX, s.r * CONFIG.tileSize * scaleY, 4, 4);
+                        });
+                    } else if (o instanceof Wall && !(o instanceof Pipe)) {
+                        mmCtx.fillStyle = '#475569';
+                        mmCtx.fillRect(o.x * scaleX, o.y * scaleY, 3, 3);
+                    }
+                });
+
+                mmCtx.fillStyle = '#ef4444';
+                this.entities.forEach(e => {
+                    if (e.type === 'enemy') {
+                        const blink = Math.sin(Date.now() / 200) > 0;
+                        mmCtx.fillStyle = blink ? '#ef4444' : '#7f1d1d';
+                        mmCtx.beginPath();
+                        mmCtx.arc((e.x+e.w/2)*scaleX, (e.y+e.h/2)*scaleY, 3, 0, Math.PI*2);
+                        mmCtx.fill();
+                    }
+                });
+
+                if(this.player) {
+                    const px = (this.player.x + this.player.w/2) * scaleX;
+                    const py = (this.player.y + this.player.h/2) * scaleY;
+                    const angle = Math.atan2(this.player.facing.y, this.player.facing.x);
+
+                    mmCtx.save();
+                    mmCtx.translate(px, py);
+                    mmCtx.rotate(angle);
+                    mmCtx.fillStyle = '#38bdf8';
+                    mmCtx.beginPath();
+                    mmCtx.moveTo(5, 0);
+                    mmCtx.lineTo(-4, 4);
+                    mmCtx.lineTo(-4, -4);
+                    mmCtx.fill();
+                    mmCtx.restore();
+
+                    mmCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                    mmCtx.lineWidth = 1;
+                    mmCtx.strokeRect(Camera.x * scaleX, Camera.y * scaleY, canvas.width * scaleX, canvas.height * scaleY);
+                }
+            },
+
+            shakeScreen() {
+                const intensity = 10;
+                canvas.style.transform = `translate(${Math.random()*intensity - intensity/2}px, ${Math.random()*intensity - intensity/2}px)`;
+                setTimeout(() => canvas.style.transform = 'none', 50);
+            },
+
+            addFloatingText(x, y, text, color, type = 'normal') {
+                const el = document.createElement('div');
+                el.className = 'floating-text';
+                if(type === 'dolo') el.classList.add('dolo-text');
+
+                el.style.left = (x - Camera.x) + 'px';
+                el.style.top = (y - Camera.y) + 'px';
+                el.style.color = color;
+                el.innerText = text;
+                document.getElementById('game-layer').parentNode.appendChild(el);
+                setTimeout(() => el.remove(), 2000);
+            },
+
+            updateUI() {
+                document.getElementById('hp-val').innerText = this.player.hp;
+                document.getElementById('mine-val').innerText = this.mineCount;
+                document.getElementById('mine-count').innerText = this.mineCount;
+                const btnMine = document.getElementById('btn-mine');
+                if (this.mineCount > 0) {
+                      btnMine.style.borderColor = '#fbbf24';
+                      btnMine.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
+                } else {
+                      btnMine.style.borderColor = 'rgba(255,255,255,0.4)';
+                      btnMine.style.background = 'rgba(255, 255, 255, 0.1)';
+                }
+            },
+
+            gameOver(win) {
+                this.running = false;
+                this.lastWin = win;
+                const modal = document.getElementById('end-modal');
+                const title = document.getElementById('end-title');
+                const msg = document.getElementById('end-msg');
+                const icon = document.getElementById('end-icon');
+                const btnCoupon = document.getElementById('btn-coupon');
+                const btnSave = document.getElementById('btn-save-record');
+                const statsContainer = document.getElementById('end-stats-container');
+
+                modal.classList.add('show');
+                if (win) {
+                    icon.innerText = "✨";
+                    title.innerText = "完美淨化！";
+                    title.className = "text-3xl font-black text-green-600 mb-2";
+                    msg.innerText = `所有威脅已清除！`;
+                    btnCoupon.classList.remove('hidden');
+                    btnSave.classList.remove('hidden');
+                    statsContainer.classList.remove('hidden');
+
+                    let mins = Math.floor(this.timeElapsed/60).toString().padStart(2,'0');
+                    let secs = Math.floor(this.timeElapsed%60).toString().padStart(2,'0');
+
+                    // 獲取當前日期和時間
+                    const now = new Date();
+                    const dateStr = `${now.getFullYear()}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+                    statsContainer.innerHTML = `
+                        <div class="end-stat-row">
+                            <div class="end-stat-item">
+                                <span class="text-sm text-gray-500">通關時間</span>
+                                <span class="text-xl font-black text-blue-600">${mins}:${secs}</span>
+                            </div>
+                            <div class="end-stat-item">
+                                <span class="text-sm text-gray-500">剩餘血量</span>
+                                <span class="text-xl font-black text-red-600">${this.player.hp} ❤️</span>
+                            </div>
+                        </div>
+                        <div class="end-date">${dateStr}</div>
+                    `;
+                } else {
+                    icon.innerText = "🦠";
+                    title.innerText = "任務失敗";
+                    title.className = "text-3xl font-black text-red-600 mb-2";
+                    msg.innerText = `細菌太多了...`;
+                    btnCoupon.classList.add('hidden');
+                    btnSave.classList.add('hidden'); // 失敗時通常不存戰績，也可視需求開啟
+                    statsContainer.classList.add('hidden');
+                }
+            }
+        };
+
+        class Entity {
+            constructor(x, y, w, h) {
+                this.x = x; this.y = y; this.w = w; this.h = h;
+                this.vx = 0; this.vy = 0;
+                this.dead = false;
+                this.type = 'entity';
+            }
+            update(dt) { this.x += this.vx; this.y += this.vy; }
+            draw(ctx) {}
+            get center() { return { x: this.x + this.w/2, y: this.y + this.h/2 }; }
+            checkCollision(other) {
+                return (this.x < other.x + other.w && this.x + this.w > other.x && this.y < other.y + other.h && this.y + this.h > other.y);
+            }
+        }
+
+        class Player extends Entity {
+            constructor(x, y) {
+                super(x, y, 40, 40);
+                this.hp = 5;
+                this.speed = CONFIG.playerSpeed;
+                this.lastShot = 0;
+                this.facing = {x: 0, y: 1};
+                this.invincible = 0;
+            }
+            update(dt) {
+                this.vx = Input.move.x * this.speed * dt;
+                this.vy = Input.move.y * this.speed * dt;
+
+                if (Math.abs(Input.move.x) > 0.1 || Math.abs(Input.move.y) > 0.1) {
+                    this.facing = { ...Input.move };
+                }
+
+                if (!this.isValidMove(this.x + this.vx, this.y)) this.vx = 0;
+                if (!this.isValidMove(this.x, this.y + this.vy)) this.vy = 0;
+
+                super.update(dt);
+
+                const maxX = Game.mapCols * CONFIG.tileSize - this.w;
+                const maxY = Game.mapRows * CONFIG.tileSize - this.h;
+                if (this.x < 0) this.x = 0;
+                if (this.y < 0) this.y = 0;
+                if (this.x > maxX) this.x = maxX;
+                if (this.y > maxY) this.y = maxY;
+
+                if (this.invincible > 0) this.invincible -= dt;
+            }
+            isValidMove(nx, ny) {
+                if(nx < 0 || ny < 0 || nx > Game.mapCols*CONFIG.tileSize || ny > Game.mapRows*CONFIG.tileSize) return false;
+                const padding = 5;
+                const points = [
+                    {c: Math.floor((nx+padding)/CONFIG.tileSize), r: Math.floor((ny+padding)/CONFIG.tileSize)},
+                    {c: Math.floor((nx+this.w-padding)/CONFIG.tileSize), r: Math.floor((ny+padding)/CONFIG.tileSize)},
+                    {c: Math.floor((nx+padding)/CONFIG.tileSize), r: Math.floor((ny+this.h-padding)/CONFIG.tileSize)},
+                    {c: Math.floor((nx+this.w-padding)/CONFIG.tileSize), r: Math.floor((ny+this.h-padding)/CONFIG.tileSize)}
+                ];
+                return points.every(p => {
+                    if (!Game.grid[p.r]) return false;
+                    return Game.grid[p.r][p.c] === 0;
+                });
+            }
+            shoot() {
+                const now = Date.now();
+                if (now - this.lastShot > 80) {
+                    this.lastShot = now;
+                    let mag = Math.sqrt(this.facing.x**2 + this.facing.y**2);
+                    if (mag === 0) mag = 1;
+                    Game.entities.push(new Bullet(this.center.x, this.center.y, (this.facing.x/mag), (this.facing.y/mag)));
+                }
+            }
+            placeMine() {
+                if (Game.mineCount > 0) {
+                    Game.mineCount--;
+                    Game.entities.push(new Mine(this.center.x, this.center.y));
+                    Game.updateUI();
+                    Game.addFloatingText(this.x, this.y, "地雷設置!", "#fbbf24");
+                } else {
+                    Game.addFloatingText(this.x, this.y, "需要洗水管!", "#ef4444");
+                }
+            }
+            takeDamage(amt) {
+                if (this.invincible > 0) return;
+                this.hp -= amt;
+                this.invincible = 1.0;
+                Game.shakeScreen();
+                Game.updateUI();
+                Game.addFloatingText(this.x, this.y, "-1 HP", "#ef4444");
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.center.x, this.center.y);
+                // Drop shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.beginPath(); ctx.ellipse(0, 15, 12, 5, 0, 0, Math.PI*2); ctx.fill();
+
+                if (this.invincible > 0 && Math.floor(Date.now()/100)%2) ctx.globalAlpha = 0.5;
+                if (this.facing.x < 0) ctx.scale(-1, 1);
+
+                // 3D Character Drawing
+                const legGrad = ctx.createLinearGradient(-8, 0, 2, 0);
+                legGrad.addColorStop(0, '#172554'); legGrad.addColorStop(0.5, '#1e40af'); legGrad.addColorStop(1, '#172554');
+                ctx.fillStyle = legGrad;
+                ctx.fillRect(-8, 10, 6, 12);
+
+                const rightLegGrad = ctx.createLinearGradient(2, 0, 12, 0);
+                rightLegGrad.addColorStop(0, '#172554'); rightLegGrad.addColorStop(0.5, '#1e40af'); rightLegGrad.addColorStop(1, '#172554');
+                ctx.fillStyle = rightLegGrad;
+                ctx.fillRect(2, 10, 6, 12);
+
+                const bodyGrad = ctx.createLinearGradient(-10, 0, 10, 0);
+                bodyGrad.addColorStop(0, '#14532d'); bodyGrad.addColorStop(0.5, '#16a34a'); bodyGrad.addColorStop(1, '#14532d');
+                ctx.fillStyle = bodyGrad;
+                ctx.fillRect(-10, -5, 20, 18);
+                ctx.fillRect(-14, -5, 4, 8); ctx.fillRect(10, -5, 4, 8);
+
+                const headGrad = ctx.createLinearGradient(-9, 0, 9, 0);
+                headGrad.addColorStop(0, '#fcd34d'); headGrad.addColorStop(0.5, '#fde68a'); headGrad.addColorStop(1, '#fcd34d');
+                ctx.fillStyle = headGrad;
+                ctx.fillRect(-9, -22, 18, 18);
+
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(-8, -16, 6, 4); ctx.fillRect(2, -16, 6, 4); ctx.fillRect(-2, -15, 4, 1);
+                ctx.fillStyle = '#bfdbfe'; ctx.fillRect(-7, -15, 4, 2); ctx.fillRect(3, -15, 4, 2);
+
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(-10, -25, 20, 6); ctx.fillRect(-10, -25, 4, 15);
+
+                ctx.restore();
+            }
+        }
+
+        class Enemy extends Entity {
+            constructor(x, y) {
+                super(x, y, 40, 40);
+                this.maxSpeed = CONFIG.enemySpeed;
+                this.wanderSpeed = CONFIG.enemyWanderSpeed;
+                this.hp = 6;
+                this.type = 'enemy';
+                this.wanderTimer = 0;
+                this.wanderDir = {x: 0, y: 0};
+                this.state = 'wander';
+                this.animOffset = Math.random() * 100;
+            }
+            update(dt) {
+                const p = Game.player;
+                const dx = p.x - this.x;
+                const dy = p.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist < CONFIG.enemyAggroRange) this.state = 'chase';
+                else this.state = 'wander';
+
+                if (this.state === 'chase') {
+                    if (dist > 0) {
+                        this.vx = (dx / dist) * this.maxSpeed * dt;
+                        this.vy = (dy / dist) * this.maxSpeed * dt;
+                    }
+                } else {
+                    this.wanderTimer -= dt;
+                    if (this.wanderTimer <= 0) {
+                        this.wanderTimer = 2 + Math.random() * 2;
+                        const angle = Math.random() * Math.PI * 2;
+                        this.wanderDir = { x: Math.cos(angle) * this.wanderSpeed * dt, y: Math.sin(angle) * this.wanderSpeed * dt };
+                    }
+                    this.vx = this.wanderDir.x;
+                    this.vy = this.wanderDir.y;
+                }
+
+                Game.entities.forEach(e => {
+                    if (e !== this && e.type === 'enemy' && this.checkCollision(e)) {
+                        this.vx -= (e.x - this.x) * 2 * dt;
+                        this.vy -= (e.y - this.y) * 2 * dt;
+                    }
+                });
+
+                const nextX = this.x + this.vx;
+                const nextY = this.y + this.vy;
+                if(this.isValidPos(nextX, this.y)) this.x = nextX;
+                else if (this.state === 'wander') this.wanderTimer = 0;
+                if(this.isValidPos(this.x, nextY)) this.y = nextY;
+                else if (this.state === 'wander') this.wanderTimer = 0;
+                if (this.checkCollision(p)) p.takeDamage(1);
+            }
+            isValidPos(nx, ny) {
+                 const c = Math.floor((nx + this.w/2) / CONFIG.tileSize);
+                 const r = Math.floor((ny + this.h/2) / CONFIG.tileSize);
+                 if (c < 0 || c >= Game.mapCols || r < 0 || r >= Game.mapRows) return false;
+                 return Game.grid[r] && Game.grid[r][c] === 0;
+            }
+            takeDamage(amt) {
+                this.hp -= amt;
+                if (this.hp <= 0) {
+                    this.dead = true;
+                    Game.enemiesKilled++;
+                    for(let i=0; i<5; i++) Game.particles.push(new Particle(this.center.x, this.center.y, 'goo'));
+                }
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.center.x, this.center.y);
+
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath(); ctx.ellipse(0, 10, 12, 6, 0, 0, Math.PI*2); ctx.fill();
+
+                const bounce = Math.sin(Date.now() / 150 + this.animOffset) * 0.1;
+                ctx.scale(1 - bounce, 1 + bounce);
+
+                // 邏輯修改：攻擊狀態變紅色
+                const isChasing = this.state === 'chase';
+                ctx.fillStyle = isChasing ? '#ef4444' : '#8b5cf6'; // 攻擊紅 / 平時紫
+
+                ctx.beginPath();
+                ctx.moveTo(-15, 10);
+                ctx.quadraticCurveTo(-15, -15, 0, -15);
+                ctx.quadraticCurveTo(15, -15, 15, 10);
+                ctx.lineTo(-15, 10);
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.beginPath(); ctx.ellipse(-6, -6, 4, 2, -0.5, 0, Math.PI*2); ctx.fill();
+
+                if (this.state === 'chase') {
+                    ctx.strokeStyle = '#3f0c13'; ctx.lineWidth = 2; // 生氣眉毛深色
+                    ctx.beginPath(); ctx.moveTo(-8, -2); ctx.lineTo(-2, 2); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(8, -2); ctx.lineTo(2, 2); ctx.stroke();
+                } else {
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath(); ctx.arc(-6, -2, 3, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(6, -2, 3, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath(); ctx.arc(-6, -2, 1, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(6, -2, 1, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.restore();
+
+                ctx.fillStyle = 'red'; ctx.fillRect(this.x, this.y - 15, this.w, 4);
+                ctx.fillStyle = '#22c55e'; ctx.fillRect(this.x, this.y - 15, this.w * (this.hp/6), 4);
+            }
+        }
+
+        class LightWave extends Entity {
+            constructor(beams) {
+                super(0, 0, 0, 0);
+                this.beams = beams;
+                this.lifespan = 0.5;
+            }
+            update(dt) {
+                this.lifespan -= dt;
+                if (this.lifespan <= 0) this.dead = true;
+                Game.entities.forEach(e => {
+                    if (e.type === 'enemy') {
+                        if (this.checkHit(e)) {
+                            e.takeDamage(10);
+                            Game.particles.push(new Particle(e.center.x, e.center.y, 'explosion'));
+                        }
+                    }
+                });
+            }
+            checkHit(entity) {
+                for (const beam of this.beams) {
+                    if (checkCollision(entity, beam)) return true;
+                }
+                return false;
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = this.lifespan * 2;
+                ctx.fillStyle = CONFIG.colors.lightwave;
+                ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 20;
+
+                this.beams.forEach(beam => {
+                    ctx.fillRect(beam.x, beam.y, beam.w, beam.h);
+                });
+
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#fff';
+                ctx.globalAlpha = this.lifespan;
+
+                this.beams.forEach(beam => {
+                    // Draw thinner inner beam
+                    let ix = beam.x, iy = beam.y, iw = beam.w, ih = beam.h;
+                    if (beam.w > beam.h) { // Horizontal
+                         iy += 10; ih -= 20;
+                    } else { // Vertical
+                         ix += 10; iw -= 20;
+                    }
+                    ctx.fillRect(ix, iy, iw, ih);
+                });
+                ctx.restore();
+            }
+        }
+
+        class Bullet extends Entity {
+            constructor(x, y, dx, dy) {
+                super(x, y, 10, 10);
+                this.vx = dx * 500; this.vy = dy * 500;
+                this.life = 0.4; // Reduced range
+            }
+            update(dt) {
+                this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
+                if (this.life <= 0) this.dead = true;
+
+                let pipeHit = false;
+                for(const obj of Game.obstacles) {
+                    if(obj instanceof Pipe) {
+                        if (obj.checkHit(this)) {
+                            obj.clean();
+                            pipeHit = true;
+                            this.dead = true;
+                            break;
+                        } else if (checkCollision(this, obj.boundingBox)) {
+                             this.dead = true;
+                             Game.particles.push(new Particle(this.x, this.y, 'water'));
+                             break;
+                        }
+                    } else if (obj instanceof Wall && checkCollision(this, obj)) {
+                        this.dead = true;
+                        Game.particles.push(new Particle(this.x, this.y, 'water'));
+                        break;
+                    }
+                }
+
+                if(!this.dead) {
+                    Game.entities.forEach(e => {
+                        if (e.type === 'enemy' && this.checkCollision(e)) {
+                            e.takeDamage(1);
+                            this.dead = true;
+                            Game.particles.push(new Particle(this.x, this.y, 'water'));
+                        }
+                    });
+                }
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const angle = Math.atan2(this.vy, this.vx);
+                ctx.rotate(angle);
+                const grad = ctx.createLinearGradient(-20, 0, 10, 0);
+                grad.addColorStop(0, 'rgba(59, 130, 246, 0)');
+                grad.addColorStop(0.5, 'rgba(59, 130, 246, 0.8)');
+                grad.addColorStop(1, 'rgba(255, 255, 255, 1)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(10, 0);
+                ctx.quadraticCurveTo(0, 6, -25, 0);
+                ctx.quadraticCurveTo(0, -6, 10, 0);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(191, 219, 254, 0.6)';
+                ctx.beginPath();
+                ctx.arc(-5, 5, 2, 0, Math.PI*2);
+                ctx.arc(-10, -4, 2.5, 0, Math.PI*2);
+                ctx.arc(-20, 2, 1.5, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Mine extends Entity {
+            constructor(x, y) { super(x - 15, y - 15, 30, 30); this.timer = 2.0; }
+            update(dt) { this.timer -= dt; if (this.timer <= 0) { this.dead = true; this.explode(); } }
+            explode() {
+                Game.shakeScreen();
+                Game.mineCount--;
+                Game.updateUI();
+
+                // Mine explosion beams: Full Cross
+                const thickness = 40;
+                const beams = [
+                    {x: 0, y: this.center.y - thickness/2, w: Game.mapCols * CONFIG.tileSize, h: thickness},
+                    {x: this.center.x - thickness/2, y: 0, w: thickness, h: Game.mapRows * CONFIG.tileSize}
+                ];
+
+                Game.entities.push(new LightWave(beams));
+                for(let i=0; i<10; i++) Game.particles.push(new Particle(this.center.x, this.center.y, 'blue-explosion'));
+            }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.center.x, this.center.y);
+                const pulse = Math.sin(Date.now()/50) * 0.2 + 1;
+                ctx.scale(pulse, pulse);
+                ctx.fillStyle = '#1f2937';
+                ctx.beginPath(); ctx.arc(0, 5, 12, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'black'; ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.fillText(Math.ceil(this.timer), 0, 4);
+                ctx.restore();
+            }
+        }
+
+        class Wall {
+            constructor(x, y) { this.x = x; this.y = y; this.w = CONFIG.tileSize; this.h = CONFIG.tileSize; this.dead = false; }
+            update(dt) {}
+            draw(ctx) {
+                ctx.fillStyle = CONFIG.colors.wallSide;
+                ctx.fillRect(this.x, this.y + 10, this.w, this.h - 10);
+                ctx.fillStyle = CONFIG.colors.wallTop;
+                ctx.fillRect(this.x, this.y, this.w, this.h - 10);
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                ctx.fillRect(this.x, this.y, this.w, 2);
+            }
+        }
+
+        // --- NEW PIPE IMPLEMENTATION WITH CLIPPING & 3D STYLE ---
+        class Pipe {
+            constructor(segments) {
+                this.segments = segments;
+                this.dirty = true;
+                this.cleanliness = 0; // 0 to 1 (1 = clean)
+                this.lastHitTime = 0;
+                this.sludgeOffset = Math.random() * 100;
+                this.dead = false;
+                this.hasValve = Math.random() > 0.5; // Some pipes have valves
+                this.valvePos = this.segments[Math.floor(Math.random() * this.segments.length)];
+
+                let minC = Infinity, maxC = -Infinity, minR = Infinity, maxR = -Infinity;
+                this.segments.forEach(s => {
+                    minC = Math.min(minC, s.c);
+                    maxC = Math.max(maxC, s.c);
+                    minR = Math.min(minR, s.r);
+                    maxR = Math.max(maxR, s.r);
+                });
+                this.boundingBox = {
+                    x: minC * CONFIG.tileSize,
+                    y: minR * CONFIG.tileSize,
+                    w: (maxC - minC + 1) * CONFIG.tileSize,
+                    h: (maxR - minR + 1) * CONFIG.tileSize
+                };
+                this.y = this.boundingBox.y;
+                this.h = this.boundingBox.h;
+
+                this.openings = this.findOpenings();
+            }
+
+            findOpenings() {
+                const map = new Map();
+                this.segments.forEach(s => map.set(`${s.c},${s.r}`, s));
+
+                const openings = [];
+                this.segments.forEach(s => {
+                    const neighbors = [];
+                    const dirs = [{dc:1, dr:0}, {dc:0, dr:1}, {dc:-1, dr:0}, {dc:0, dr:-1}];
+                    dirs.forEach(d => {
+                        if(map.has(`${s.c+d.dc},${s.r+d.dr}`)) neighbors.push(d);
+                    });
+
+                    if(neighbors.length === 1) {
+                        const n = neighbors[0];
+                        openings.push({
+                            rect: {
+                                x: s.c * CONFIG.tileSize,
+                                y: s.r * CONFIG.tileSize,
+                                w: CONFIG.tileSize,
+                                h: CONFIG.tileSize
+                            },
+                            enterDir: {x: n.dc, y: n.dr},
+                            cx: (s.c + 0.5) * CONFIG.tileSize,
+                            cy: (s.r + 0.5) * CONFIG.tileSize,
+                            holeX: (s.c + 0.5 - n.dc*0.4) * CONFIG.tileSize,
+                            holeY: (s.r + 0.5 - n.dr*0.4) * CONFIG.tileSize
+                        });
+                    }
+                });
+                return openings;
+            }
+
+            checkHit(bullet) {
+                for(let op of this.openings) {
+                    if(checkCollision(bullet, op.rect)) {
+                        const len = Math.sqrt(bullet.vx**2 + bullet.vy**2);
+                        if (len === 0) return false;
+                        const bvx = bullet.vx / len;
+                        const bvy = bullet.vy / len;
+
+                        if (bvx * op.enterDir.x + bvy * op.enterDir.y > 0.5) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            clean() {
+                if (this.dirty) {
+                    this.cleanliness += 0.1; // Increase cleanliness per hit
+                    if(this.cleanliness >= 1.0) {
+                        this.cleanliness = 1.0;
+                        this.finishCleaning();
+                    }
+                    this.lastHitTime = Game.timeElapsed;
+                }
+            }
+
+            update(dt) {
+                // Regrow sludge logic
+                if (this.dirty && this.cleanliness > 0) {
+                    // Delay before regrowth starts (e.g., 0.5s)
+                    if(Game.timeElapsed - this.lastHitTime > 0.5) {
+                        this.cleanliness -= CONFIG.dirtRegrowRate * dt;
+                        if(this.cleanliness < 0) this.cleanliness = 0;
+                    }
+
+                    if (Math.random() > 0.7) {
+                         // Splash effect during cleaning
+                         if(this.openings.length > 0) {
+                            const op = this.openings[Math.floor(Math.random()*this.openings.length)];
+                            Game.particles.push(new Particle(op.holeX, op.holeY, 'water'));
+                        }
+                    }
+                }
+            }
+
+            finishCleaning() {
+                this.dirty = false;
+                this.dead = true;
+                this.segments.forEach(s => { Game.grid[s.r][s.c] = 0; });
+                Game.mineCount++; Game.updateUI();
+
+                const cx = this.boundingBox.x + this.boundingBox.w/2;
+                const cy = this.boundingBox.y + this.boundingBox.h/2;
+
+                Game.addFloatingText(cx, cy, "(dolo團隊-專業洗水管)", "#fff", 'dolo');
+
+                // Beam calculation
+                const beams = [];
+                const thickness = 40;
+
+                this.openings.forEach(op => {
+                    const dirX = -op.enterDir.x;
+                    const dirY = -op.enterDir.y;
+
+                    let bx, by, bw, bh;
+
+                    if (dirX !== 0) {
+                        by = op.cy - thickness/2;
+                        bh = thickness;
+                        if (dirX > 0) {
+                            bx = op.holeX;
+                            bw = Game.mapCols * CONFIG.tileSize - bx;
+                        } else {
+                            bx = 0;
+                            bw = op.holeX;
+                        }
+                    } else {
+                        bx = op.cx - thickness/2;
+                        bw = thickness;
+                        if (dirY > 0) {
+                            by = op.holeY;
+                            bh = Game.mapRows * CONFIG.tileSize - by;
+                        } else {
+                            by = 0;
+                            bh = op.holeY;
+                        }
+                    }
+                    beams.push({x: bx, y: by, w: bw, h: bh});
+                });
+
+                Game.entities.push(new LightWave(beams));
+
+                this.segments.forEach(s => {
+                    const px = s.c * CONFIG.tileSize + CONFIG.tileSize/2;
+                    const py = s.r * CONFIG.tileSize + CONFIG.tileSize/2;
+                    for(let i=0; i<5; i++) Game.particles.push(new Particle(px, py, 'blue-explosion'));
+                });
+            }
+
+            draw(ctx) {
+                ctx.save();
+
+                const pipePath = new Path2D();
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                const pipeWidth = 40;
+
+                // 1. 建立管線主幹路徑 (3D管身)
+                this.segments.forEach(s1 => {
+                    const cx1 = (s1.c + 0.5) * CONFIG.tileSize;
+                    const cy1 = (s1.r + 0.5) * CONFIG.tileSize;
+                    pipePath.moveTo(cx1 + pipeWidth/2, cy1);
+                    pipePath.arc(cx1, cy1, pipeWidth/2, 0, Math.PI*2);
+
+                    this.segments.forEach(s2 => {
+                        if (s1 === s2) return;
+                        if (Math.abs(s1.c - s2.c) + Math.abs(s1.r - s2.r) === 1) {
+                            const cx2 = (s2.c + 0.5) * CONFIG.tileSize;
+                            const cy2 = (s2.r + 0.5) * CONFIG.tileSize;
+                            const dx = cx2 - cx1;
+                            const dy = cy2 - cy1;
+                            if(Math.abs(dx) > 0) {
+                                const x = Math.min(cx1, cx2);
+                                pipePath.rect(x, cy1 - pipeWidth/2, Math.abs(dx), pipeWidth);
+                            } else {
+                                const y = Math.min(cy1, cy2);
+                                pipePath.rect(cx1 - pipeWidth/2, y, pipeWidth, Math.abs(dy));
+                            }
+                        }
+                    });
+                });
+
+                // 陰影層
+                ctx.lineWidth = 44;
+                ctx.strokeStyle = CONFIG.colors.pipeShadow;
+                ctx.fillStyle = CONFIG.colors.pipeShadow;
+                ctx.fill(pipePath);
+
+                // 中心線路徑（多次重複利用）
+                const centerPath = new Path2D();
+                this.segments.forEach(s1 => {
+                    const cx1 = (s1.c + 0.5) * CONFIG.tileSize;
+                    const cy1 = (s1.r + 0.5) * CONFIG.tileSize;
+                    this.segments.forEach(s2 => {
+                        if (s1 === s2) return;
+                        if (Math.abs(s1.c - s2.c) + Math.abs(s1.r - s2.r) === 1) {
+                            const cx2 = (s2.c + 0.5) * CONFIG.tileSize;
+                            const cy2 = (s2.r + 0.5) * CONFIG.tileSize;
+                            centerPath.moveTo(cx1, cy1);
+                            centerPath.lineTo(cx2, cy2);
+                        }
+                    });
+                });
+
+                // 外圍厚管身（暗）
+                ctx.lineWidth = 48;
+                ctx.strokeStyle = CONFIG.colors.pipeShadow;
+                ctx.stroke(centerPath);
+                this.segments.forEach(s => {
+                    const cx = (s.c + 0.5) * CONFIG.tileSize;
+                    const cy = (s.r + 0.5) * CONFIG.tileSize;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 24, 0, Math.PI*2);
+                    ctx.fillStyle = CONFIG.colors.pipeShadow;
+                    ctx.fill();
+                });
+
+                // 主色管身
+                ctx.lineWidth = 40;
+                ctx.strokeStyle = CONFIG.colors.pipeBase;
+                ctx.stroke(centerPath);
+                this.segments.forEach(s => {
+                    const cx = (s.c + 0.5) * CONFIG.tileSize;
+                    const cy = (s.r + 0.5) * CONFIG.tileSize;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 20, 0, Math.PI*2);
+                    ctx.fillStyle = CONFIG.colors.pipeBase;
+                    ctx.fill();
+                });
+
+                // 高光層
+                ctx.lineWidth = 24;
+                ctx.strokeStyle = CONFIG.colors.pipeHighlight;
+                ctx.stroke(centerPath);
+                this.segments.forEach(s => {
+                    const cx = (s.c + 0.5) * CONFIG.tileSize;
+                    const cy = (s.r + 0.5) * CONFIG.tileSize;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 12, 0, Math.PI*2);
+                    ctx.fillStyle = CONFIG.colors.pipeHighlight;
+                    ctx.fill();
+                });
+
+                // 鏡面反光
+                ctx.lineWidth = 8;
+                ctx.strokeStyle = CONFIG.colors.pipeSpecular;
+                ctx.globalAlpha = 0.6;
+                ctx.stroke(centerPath);
+                this.segments.forEach(s => {
+                    const cx = (s.c + 0.5) * CONFIG.tileSize;
+                    const cy = (s.r + 0.5) * CONFIG.tileSize;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 4, 0, Math.PI*2);
+                    ctx.fillStyle = CONFIG.colors.pipeSpecular;
+                    ctx.fill();
+                });
+                ctx.globalAlpha = 1.0;
+
+                // 2. 管內髒污（依清潔度縮減）
+                if (this.dirty) {
+                    let sludgeScale = 1 - this.cleanliness;
+
+                    ctx.save();
+                    const clipPath = new Path2D();
+                    const r = 16;
+                    this.segments.forEach(s1 => {
+                        const cx1 = (s1.c + 0.5) * CONFIG.tileSize;
+                        const cy1 = (s1.r + 0.5) * CONFIG.tileSize;
+                        clipPath.moveTo(cx1 + r, cy1);
+                        clipPath.arc(cx1, cy1, r, 0, Math.PI*2);
+                        this.segments.forEach(s2 => {
+                            if (s1 === s2) return;
+                            if (Math.abs(s1.c - s2.c) + Math.abs(s1.r - s2.r) === 1) {
+                                const cx2 = (s2.c + 0.5) * CONFIG.tileSize;
+                                const cy2 = (s2.r + 0.5) * CONFIG.tileSize;
+                                const dx = cx2 - cx1;
+                                const dy = cy2 - cy1;
+                                if(Math.abs(dx) > 0) {
+                                    const x = Math.min(cx1, cx2);
+                                    clipPath.rect(x, cy1 - r, Math.abs(dx), r*2);
+                                } else {
+                                    const y = Math.min(cy1, cy2);
+                                    clipPath.rect(cx1 - r, y, r*2, Math.abs(dy));
+                                }
+                            }
+                        });
+                    });
+
+                    ctx.clip(clipPath);
+
+                    const wiggle = Math.sin(Date.now() / 200 + this.sludgeOffset) * 2;
+
+                    ctx.strokeStyle = CONFIG.colors.sludgeBase;
+                    ctx.lineWidth = 32 * sludgeScale;
+                    ctx.stroke(centerPath);
+
+                    ctx.strokeStyle = CONFIG.colors.sludgeDetail;
+                    ctx.lineWidth = 24 * sludgeScale;
+                    ctx.setLineDash([5, 10]);
+                    ctx.lineDashOffset = wiggle;
+                    ctx.stroke(centerPath);
+
+                    if(this.cleanliness > 0) {
+                        ctx.strokeStyle = '#bae6fd';
+                        ctx.lineWidth = 20 * this.cleanliness;
+                        ctx.setLineDash([2, 5]);
+                        ctx.lineDashOffset = -wiggle * 5;
+                        ctx.stroke(centerPath);
+                    }
+
+                    ctx.restore();
+                }
+
+                // 3. 管口 (亮灰色長方形, 高:寬約 5:1)
+                this.openings.forEach(op => {
+                    // 方向：朝「管子外面」的方向
+                    const dirX = -op.enterDir.x;
+                    const dirY = -op.enterDir.y;
+                    const angle = Math.atan2(dirY, dirX);
+
+                    ctx.save();
+                    ctx.translate(op.holeX, op.holeY);
+                    ctx.rotate(angle);
+
+                    // 繪製亮灰色長方形
+                    // 比例 5:1 (相對於格子64px -> 寬約13px)
+                    // 長度設為 44px (略大於管徑 40px)，厚度 13px
+                    ctx.fillStyle = '#e2e8f0'; // 亮灰色
+
+                    // 繪製置中的長方形
+                    // x從 -6.5 到 6.5 (厚度13), y從 -22 到 22 (長度44)
+                    ctx.fillRect(-6.5, -22, 13, 44);
+
+                    ctx.restore();
+                });
+
+                // 4. 閥門
+                if(this.hasValve) {
+                    const vx = (this.valvePos.c + 0.5) * CONFIG.tileSize;
+                    const vy = (this.valvePos.r + 0.5) * CONFIG.tileSize;
+
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillRect(vx-4, vy-10, 8, 10);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath();
+                    ctx.ellipse(vx, vy-14, 16, 6, 0, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle = '#fca5a5';
+                    ctx.beginPath();
+                    ctx.ellipse(vx-5, vy-16, 6, 2, 0, 0, Math.PI*2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, type) {
+                this.x = x; this.y = y; this.type = type; this.life = 1.0;
+                const angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 100;
+
+                if (type === 'blue-explosion') speed = Math.random() * 200 + 50;
+
+                this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+                if (type === 'coin') { this.vy = -50; this.vx = 0; }
+            }
+            update(dt) { this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt * 1.5; }
+            draw(ctx) {
+                ctx.globalAlpha = this.life;
+                if (this.type === 'water') {
+                    ctx.fillStyle = '#bae6fd'; ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill();
+                }
+                else if (this.type === 'blue-explosion') {
+                    ctx.fillStyle = CONFIG.colors.explosionBlue;
+                    ctx.beginPath(); ctx.arc(this.x, this.y, 6 * this.life, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath(); ctx.arc(this.x, this.y, 3 * this.life, 0, Math.PI*2); ctx.fill();
+                }
+                else if (this.type === 'goo') { ctx.fillStyle = '#a3e635'; ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI*2); ctx.fill(); }
+                else if (this.type === 'explosion') { ctx.fillStyle = '#fca5a5'; ctx.beginPath(); ctx.arc(this.x, this.y, 10 * this.life, 0, Math.PI*2); ctx.fill(); }
+                else if (this.type === 'coin') { ctx.font = '20px Arial'; ctx.fillStyle = '#fbbf24'; ctx.fillText('💰', this.x, this.y); }
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function checkCollision(r1, r2) {
+            return (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y);
+        }
+
+        window.onload = () => { Game.init(); };
+
+    </script>
+</body>
+</html>
