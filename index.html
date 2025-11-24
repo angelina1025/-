@@ -23,7 +23,8 @@
             height: 100%;
             overflow: hidden;
             background-color: #0f172a;
-            position: fixed;
+            /* 修改：移除 fixed，改為相對定位以適應嵌入區塊 */
+            position: relative; 
         }
 
         #game-layer {
@@ -46,15 +47,15 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            /* 安全區域設定 */
-            padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+            /* 這裡使用 container query 的概念，以容器寬度為基準 */
+            padding: 16px; 
         }
 
-        /* 狀態面板 - 左上 (預設桌面樣式) */
+        /* 狀態面板 - 左上 */
         .status-panel-left {
             position: absolute;
-            top: max(16px, env(safe-area-inset-top));
-            left: max(16px, env(safe-area-inset-left));
+            top: 16px;
+            left: 16px;
             display: flex;
             gap: 12px;
             z-index: 20;
@@ -63,7 +64,7 @@
         /* 狀態面板 - 中上 (時間) */
         .status-panel-center {
             position: absolute;
-            top: max(16px, env(safe-area-inset-top));
+            top: 16px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 20;
@@ -88,8 +89,8 @@
         /* 小地圖 - 右上 */
         #minimap-container {
             position: absolute;
-            top: max(16px, env(safe-area-inset-top));
-            right: max(16px, env(safe-area-inset-right));
+            top: 16px;
+            right: 16px;
             width: 140px;
             height: 140px;
             background: #1e293b;
@@ -101,32 +102,23 @@
         }
         #minimap-canvas { width: 100%; height: 100%; display: block; }
 
-        /* --- 響應式調整 (配合您的 CSS: max-width: 768px 為手機版) --- */
-        @media (max-width: 768px) {
-            /* 1. 左側狀態欄垂直排列 */
-            .status-panel-left {
-                flex-direction: column;
-                gap: 8px;
-                align-items: flex-start;
-            }
-
-            /* 2. 字體與內距微調 */
-            .stat-badge {
-                font-size: 14px;
-                padding: 4px 10px;
-            }
-
-            /* 3. 縮小地圖尺寸 */
-            #minimap-container {
-                width: 100px;
-                height: 100px;
-                border-width: 2px;
-            }
-
-            /* 4. 調整時間位置 */
-            .status-panel-center {
-                top: max(12px, env(safe-area-inset-top));
-            }
+        /* JS 會動態切換 class 來控制樣式，取代原本的 media query */
+        .mobile-layout .status-panel-left {
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .mobile-layout .stat-badge {
+            font-size: 14px;
+            padding: 4px 10px;
+        }
+        .mobile-layout #minimap-container {
+            width: 100px;
+            height: 100px;
+            border-width: 2px;
+        }
+        .mobile-layout .status-panel-center {
+            top: 12px;
         }
 
         /* 底部控制器 */
@@ -140,7 +132,6 @@
             justify-content: space-between;
             align-items: flex-end;
             padding: 0 30px 40px 30px;
-            padding-bottom: max(40px, env(safe-area-inset-bottom));
             pointer-events: auto;
         }
 
@@ -341,7 +332,7 @@
         }
     </style>
 </head>
-<body>
+<body id="game-body">
 
     <canvas id="game-layer"></canvas>
 
@@ -526,7 +517,7 @@
         const CONFIG = {
             tileSize: 64,
             playerSpeed: 250,
-            enemySpeed: 180, // Default speed
+            enemySpeed: 150, // Default speed reduced
             enemyWanderSpeed: 50, 
             enemyAggroRange: 300,
             totalEnemies: 10, // Default
@@ -575,28 +566,27 @@
                 window.addEventListener('keyup', e => this.onKey(e, false));
                 this.initTouchButtons();
                 Joystick.init();
-                // Detect mode initially
-                this.detectMode();
+                // Wait for first resize/layout update to detect mode
             },
 
-            detectMode() {
+            updateModeDisplay(isDesktop) {
                 const hintEl = document.getElementById('dynamic-controls-hint');
                 const controlsArea = document.querySelector('.controls-area');
                 const pcHint = document.getElementById('pc-controls-hint');
-
-                // 使用與 CSS 媒體查詢一致的斷點 (768px)
-                const isDesktop = window.innerWidth > 768;
+                const body = document.body;
 
                 if (isDesktop) {
                     this.mode = 'keyboard';
                     if(controlsArea) controlsArea.style.display = 'none';
                     if(pcHint) pcHint.style.display = 'block';
                     if(hintEl) hintEl.innerHTML = `💻 電腦版模式：WASD 移動, 空白鍵射擊`;
+                    body.classList.remove('mobile-layout');
                 } else {
                     this.mode = 'touch';
                     if(controlsArea) controlsArea.style.display = 'flex';
                     if(pcHint) pcHint.style.display = 'none';
                     if(hintEl) hintEl.innerHTML = `📱 手機版模式：使用虛擬搖桿移動`;
+                    body.classList.add('mobile-layout');
                 }
             },
 
@@ -805,58 +795,66 @@
             enemiesKilled: 0,
             player: null, 
             lastWin: false,
-            isDesktop: undefined, // Track current mode
+            isDesktop: undefined, 
             
             init() {
                 Input.init(); 
-                // 初始偵測
-                this.isDesktop = window.innerWidth > 768;
-                this.configureGameSettings();
-                this.resize();
                 
-                window.addEventListener('resize', () => this.resize());
+                // 使用 ResizeObserver 監聽 Body 大小變化
+                const resizeObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        this.handleResize(entry.contentRect.width);
+                    }
+                });
+                resizeObserver.observe(document.body);
+            },
+
+            handleResize(width) {
+                // 這裡實作了核心判定邏輯： > 768px = 電腦版，<= 768px = 手機版
+                const newIsDesktop = width > 768;
+
+                canvas.width = width;
+                canvas.height = window.innerHeight; // 或 container height if observed
+                
+                ctx.imageSmoothingEnabled = false; 
+                minimapCanvas.width = 150;
+                minimapCanvas.height = 150;
+
+                if (this.isDesktop !== newIsDesktop) {
+                    this.isDesktop = newIsDesktop;
+                    this.configureGameSettings();
+                    Input.updateModeDisplay(this.isDesktop);
+                    if (this.running) {
+                        // 如果遊戲正在進行，可能需要重啟或調整
+                        // 這裡選擇重啟以應用新地圖設定
+                        this.restart(); 
+                    } else {
+                        // 尚未開始，僅更新內部設定
+                    }
+                }
             },
 
             configureGameSettings() {
                 if (this.isDesktop) {
-                    // PC 設定: 正方形大戰場，難度標準
+                    // PC 設定: 橫式大戰場
                     this.mapCols = 25;
                     this.mapRows = 25;
                     CONFIG.maxPipeStructures = 10;
                     CONFIG.totalEnemies = 10;
-                    CONFIG.enemySpeed = 180;
+                    CONFIG.enemySpeed = 150; // Reduced from 180
                 } else {
-                    // 手機 設定: 長方形地圖 (14x24)，難度較簡單
+                    // 手機 設定: 直式長方形地圖
                     this.mapCols = 14; 
                     this.mapRows = 24; 
-                    CONFIG.maxPipeStructures = 5; // 水管少一點
-                    CONFIG.totalEnemies = 6;      // 細菌少一點
-                    CONFIG.enemySpeed = 140;      // 速度慢一點
+                    CONFIG.maxPipeStructures = 5; 
+                    CONFIG.totalEnemies = 6;      
+                    CONFIG.enemySpeed = 110; // Reduced from 140
                 }
                 // 更新目標顯示
                 const goalE = document.getElementById('goal-enemies');
                 const goalP = document.getElementById('goal-pipes');
                 if(goalE) goalE.innerText = CONFIG.totalEnemies;
                 if(goalP) goalP.innerText = CONFIG.maxPipeStructures;
-            },
-
-            resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                ctx.imageSmoothingEnabled = false; 
-                minimapCanvas.width = 150;
-                minimapCanvas.height = 150;
-
-                // 使用 768px 作為斷點
-                const newIsDesktop = window.innerWidth > 768;
-                
-                // 如果模式改變（例如從直向轉橫向，或拉大視窗），則重新生成遊戲
-                if (this.isDesktop !== undefined && this.isDesktop !== newIsDesktop) {
-                    this.isDesktop = newIsDesktop;
-                    this.configureGameSettings();
-                    this.restart(); // 重新生成地圖以適應新尺寸
-                    Input.detectMode(); // 更新控制介面
-                }
             },
 
             start() {
@@ -1461,7 +1459,7 @@
             constructor(x, y, dx, dy) {
                 super(x, y, 10, 10);
                 this.vx = dx * 500; this.vy = dy * 500;
-                this.life = 0.4; // Reduced range
+                this.life = 0.6; // Increased range
             }
             update(dt) {
                 this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
