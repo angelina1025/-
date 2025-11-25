@@ -81,13 +81,13 @@
             z-index: 20;
         }
 
-        /* 狀態面板 - 右上 (全螢幕與暫停按鈕) */
+        /* 狀態面板 - 右上 (全螢幕按鈕) */
         .status-panel-right {
             position: absolute;
             top: 24px;
             right: 24px;
             display: flex;
-            gap: 12px; /* 按鈕間距 */
+            gap: 16px;
             z-index: 50; /* 確保在最上層 */
         }
 
@@ -224,7 +224,7 @@
             margin: 0 4px; border-bottom: 3px solid #0f172a;
         }
 
-        /* 模態框與按鈕樣式 */
+        /* 模態框與按鈕樣式 (保持原樣，符合現代遊戲 UI 風格) */
         .modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.85);
@@ -254,16 +254,6 @@
         }
         .btn-primary:active { transform: translateY(4px); box-shadow: 0 2px 0 #14532d; }
         
-        .btn-secondary {
-            background: linear-gradient(to bottom, #64748b, #475569);
-            color: white; width: 100%; padding: 18px;
-            border-radius: 16px; font-size: 24px; font-weight: bold;
-            border: none; box-shadow: 0 8px 0 #1e293b;
-            margin-top: 24px; cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .btn-secondary:active { transform: translateY(4px); box-shadow: 0 2px 0 #1e293b; }
-
         .btn-line {
             background: linear-gradient(to bottom, #06c755, #059b42);
             box-shadow: 0 8px 0 #036b2d;
@@ -370,13 +360,8 @@
                     </div>
                 </div>
 
-                <!-- 右上角按鈕組 -->
+                <!-- 全螢幕按鈕 (右上角) -->
                 <div class="status-panel-right">
-                    <!-- 暫停按鈕 -->
-                    <button id="btn-pause" class="stat-badge text-amber-600 hover:bg-amber-50" onclick="Game.togglePause()">
-                        ⏸️
-                    </button>
-                    <!-- 全螢幕按鈕 -->
                     <button id="btn-fullscreen" class="stat-badge text-slate-700 hover:bg-slate-50" onclick="toggleFullscreen()">
                         ⛶ 全螢幕
                     </button>
@@ -443,21 +428,10 @@
 
                     <button class="btn-primary" onclick="Game.start()">開始任務</button>
                     
+                    <!-- 新增彈窗內的全螢幕按鈕 -->
                     <button id="btn-fullscreen-modal" class="mt-4 w-full py-3 rounded-xl font-bold text-lg text-slate-500 bg-slate-200 hover:bg-slate-300 transition-colors" onclick="toggleFullscreen()">
                         ⛶ 全螢幕遊玩
                     </button>
-                </div>
-            </div>
-
-            <!-- 模態框 - 暫停 (新增) -->
-            <div id="pause-modal" class="modal">
-                <div class="modal-content">
-                    <div class="text-7xl mb-4">⏸️</div>
-                    <h2 class="text-4xl font-black text-slate-800 mb-6">遊戲暫停</h2>
-                    <p class="text-slate-500 mb-8 text-xl">休息一下，喝口水再戰！</p>
-                    
-                    <button class="btn-primary" onclick="Game.togglePause()">繼續遊戲</button>
-                    <button class="btn-secondary" onclick="Game.restart()">重新開始</button>
                 </div>
             </div>
 
@@ -492,7 +466,7 @@
         const LINE_COUPON_URL = "https://lin.ee/eUHT4zO"; 
         function openLineCoupon() { window.open(LINE_COUPON_URL, '_blank'); }
 
-        // --- 全螢幕切換功能 ---
+        // --- 全螢幕切換功能 (更新以支援多個按鈕) ---
         
         function updateFullscreenButtons() {
             const isFs = !!document.fullscreenElement;
@@ -510,9 +484,10 @@
             if (!document.fullscreenElement) {
                 try {
                     await document.documentElement.requestFullscreen();
+                    // 嘗試鎖定橫向 (支援的手機瀏覽器會生效)
                     if (screen.orientation && screen.orientation.lock) {
                         await screen.orientation.lock('landscape').catch(err => {
-                            console.log('Orientation lock failed:', err);
+                            console.log('Orientation lock failed (usually requires user gesture or standalone mode):', err);
                         });
                     }
                 } catch (err) {
@@ -526,8 +501,10 @@
                     screen.orientation.unlock();
                 }
             }
+            // UI 更新將由 fullscreenchange 事件處理
         }
 
+        // 監聽全螢幕變化以更新所有按鈕文字
         document.addEventListener('fullscreenchange', updateFullscreenButtons);
 
         // --- 儲存戰績卡功能 ---
@@ -590,18 +567,18 @@
             const now = new Date();
             const dateStr = `${now.getFullYear()}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-            // 繪製日期時間
+            // 繪製日期時間 (y=650)
             ctx.fillStyle = '#94a3b8';
             ctx.font = '18px monospace';
             ctx.fillText(dateStr, canvas.width/2, 650);
 
-            // 繪製主要的廣告標語
+            // 繪製主要的廣告標語 (y=720)
             const slogan = 'dolo團隊-科技抓漏/洗水管/洗水塔/冷氣清洗';
             ctx.fillStyle = '#1e293b'; 
-            ctx.font = 'bold 26px "Segoe UI", sans-serif'; 
+            ctx.font = 'bold 26px "Segoe UI", sans-serif'; // Larger font for main ad
             ctx.fillText(slogan, canvas.width/2, 720); 
 
-            // 繪製 DOLO 標誌
+            // 繪製 DOLO 標誌 (y=750)
             ctx.fillStyle = '#cbd5e1'; 
             ctx.font = 'bold 18px "Segoe UI", sans-serif'; 
             ctx.fillText('專業技術支援', canvas.width/2, 750); 
@@ -614,13 +591,14 @@
         }
 
         const CONFIG = {
-            tileSize: 80, 
+            // *** 關鍵變動：增加瓦片大小，讓所有元素看起來更大 ***
+            tileSize: 80, // 每個瓦片的大小（像素）
             playerSpeed: 250,
             enemySpeed: 150, 
-            enemyWanderSpeed: 20,
+            enemyWanderSpeed: 20, // Very Slow
             enemyAggroRange: 300,
-            totalEnemies: 8, 
-            maxPipeStructures: 8, 
+            totalEnemies: 8, // 動態設定
+            maxPipeStructures: 8, // 動態設定
             cleanTimePerTile: 0.5, 
             dirtRegrowRate: 0.4, 
             colors: {
@@ -633,14 +611,14 @@
                 water: '#38bdf8',
                 lightwave: '#fef08a',
                 explosionBlue: '#60a5fa',
-                pipeBase: '#3b82f6',      
-                pipeShadow: '#1e3a8a',    
+                pipeBase: '#3b82f6',     
+                pipeShadow: '#1e3a8a',   
                 pipeHighlight: '#93c5fd',  
-                pipeSpecular: '#ffffff',    
-                connector: '#94a3b8',      
-                connectorTop: '#cbd5e1',    
-                sludgeBase: '#713f12',      
-                sludgeDetail: '#a16207'      
+                pipeSpecular: '#ffffff',   
+                connector: '#94a3b8',     
+                connectorTop: '#cbd5e1',   
+                sludgeBase: '#713f12',     
+                sludgeDetail: '#a16207'     
             }
         };
 
@@ -677,7 +655,7 @@
                     this.mode = 'keyboard';
                     if(controlsArea) controlsArea.style.display = 'none';
                     if(pcHint) pcHint.style.display = 'block';
-                    if(hintEl) hintEl.innerHTML = `💻 電腦版模式：WASD 移動, 空白鍵射擊, P 暫停`;
+                    if(hintEl) hintEl.innerHTML = `💻 電腦版模式：WASD 移動, 空白鍵射擊`;
                     scaler.classList.remove('mobile-layout');
                 } else {
                     this.mode = 'touch';
@@ -690,12 +668,6 @@
 
             onKey(e, pressed) {
                 const k = e.key.toLowerCase();
-                // 暫停快捷鍵
-                if ((k === 'p' || k === 'escape') && pressed) {
-                    Game.togglePause();
-                    return;
-                }
-
                 if (k === ' ' || k === 'space') {
                     if(pressed) e.preventDefault();
                     this.keys.space = pressed;
@@ -706,7 +678,7 @@
                 if(k === 'd' || k === 'arrowright') this.keys.d = pressed;
                 if(k === 'j') this.keys.space = pressed;
                 if((k === 'b' || k === 'k') && pressed && !this.keys.b) {
-                    if(Game.running && !Game.paused) Game.player.placeMine();
+                    if(Game.running) Game.player.placeMine();
                 }
                 if(k === 'b' || k === 'k') this.keys.b = pressed;
             },
@@ -717,12 +689,10 @@
                 
                 const startShoot = (e) => {
                     e.preventDefault();
-                    if(!Game.running || Game.paused) return;
+                    if(!Game.running) return;
                     Game.player.shoot();
                     if(!this.shootInterval) {
-                        this.shootInterval = setInterval(() => {
-                            if(!Game.paused) Game.player.shoot();
-                        }, 80); 
+                        this.shootInterval = setInterval(() => Game.player.shoot(), 80); 
                     }
                     btnShoot.style.transform = 'scale(0.92) translateY(4px)';
                 };
@@ -741,7 +711,7 @@
 
                 const placeMine = (e) => {
                     e.preventDefault();
-                    if(!Game.running || Game.paused) return;
+                    if(!Game.running) return;
                     Game.player.placeMine();
                     btnMine.style.transform = 'scale(0.92) translateY(4px)';
                     setTimeout(() => btnMine.style.transform = 'scale(1)', 100);
@@ -751,12 +721,6 @@
             },
 
             update() {
-                if (Game.paused) {
-                    this.move.x = 0;
-                    this.move.y = 0;
-                    return;
-                }
-
                 if (this.mode === 'keyboard') {
                     this.move.x = 0;
                     this.move.y = 0;
@@ -795,7 +759,6 @@
                 const knob = document.getElementById('joystick-knob');
                 
                 const startHandler = (e) => {
-                    if (Game.paused) return;
                     e.preventDefault();
                     const touch = e.changedTouches ? e.changedTouches[0] : e;
                     this.touchId = e.changedTouches ? touch.identifier : 'mouse';
@@ -886,14 +849,14 @@
 
         const canvas = document.getElementById('game-layer');
         const ctx = canvas.getContext('2d');
+        // 移除小地圖相關變數
 
         const Game = {
             running: false,
-            paused: false, // 新增暫停狀態
             lastTime: 0,
             timeElapsed: 0,
-            mapCols: 20, 
-            mapRows: 20, 
+            mapCols: 20, // 初始值，將由 handleResize 動態設定
+            mapRows: 20, // 初始值，將由 handleResize 動態設定
             grid: [],
             entities: [],
             particles: [],
@@ -925,66 +888,88 @@
             },
 
             handleResize(containerWidth, containerHeight) {
+                // 1. 判定模式 (跟隨網頁 CSS 斷點: 768px)
                 const newIsDesktop = containerWidth > 768;
 
+                // --- START 動態地圖格子計算 ---
                 const tileSize = CONFIG.tileSize; // 80px
+                
+                // *** 關鍵變動：降低最小瓦片數，以適應更大的瓦片尺寸 ***
                 const minTilesWide = 10;
                 const minTilesHigh = 12;
+
                 const containerRatio = containerWidth / containerHeight;
 
                 let calculatedMapRows;
                 let calculatedMapCols;
 
-                if (containerRatio > 1) { // 寬螢幕
+                if (containerRatio > 1) { // 寬螢幕 (Desktop/Landscape) - 固定高，寬度適應
+                    // 以最小高度為基準計算，並確保寬度不小於 20 瓦片
                     calculatedMapRows = minTilesHigh;
                     calculatedMapCols = Math.ceil(minTilesHigh * containerRatio);
-                    calculatedMapCols = Math.max(calculatedMapCols, 16); 
-                } else { // 窄螢幕
+                    calculatedMapCols = Math.max(calculatedMapCols, 16); // 保持最小 16 瓦片寬度
+                } else { // 窄螢幕 (Mobile/Portrait) - 固定寬，高度適應
+                    // 以最小寬度為基準計算，並確保高度不小於 20 瓦片
                     calculatedMapCols = minTilesWide;
                     calculatedMapRows = Math.ceil(minTilesWide / containerRatio);
-                    calculatedMapRows = Math.max(calculatedMapRows, 16); 
+                    calculatedMapRows = Math.max(calculatedMapRows, 16); // 保持最小 16 瓦片高度
                 }
+                // --- END 動態地圖格子計算 ---
 
+                // 2. 應用新的地圖尺寸
                 const mapCols = calculatedMapCols;
                 const mapRows = calculatedMapRows;
+
+                // 3. 計算虛擬畫布的像素尺寸
                 const virtualWidth = mapCols * tileSize;
                 const virtualHeight = mapRows * tileSize;
 
+                // 4. 計算縮放比例 (Cover/填滿模式)
                 const scaleX = containerWidth / virtualWidth;
                 const scaleY = containerHeight / virtualHeight;
                 const scale = Math.max(scaleX, scaleY); 
                 
+                // 5. 應用縮放
                 const scaler = document.getElementById('game-scaler');
                 scaler.style.width = `${virtualWidth}px`;
                 scaler.style.height = `${virtualHeight}px`;
                 scaler.style.transform = `scale(${scale})`;
 
+                // 6. 居中偏移
                 const currentW = virtualWidth * scale;
                 const currentH = virtualHeight * scale;
+
                 const offsetX = (containerWidth - currentW) / 2;
                 const offsetY = (containerHeight - currentH) / 2;
+
                 scaler.style.left = `${offsetX}px`;
                 scaler.style.top = `${offsetY}px`;
 
+                // 7. 更新 Canvas 解析度
                 canvas.width = virtualWidth;
                 canvas.height = virtualHeight;
+                
                 ctx.imageSmoothingEnabled = false; 
 
+                // 8. 如果地圖尺寸或模式改變，重新配置遊戲設定
                 if (this.isDesktop !== newIsDesktop || this.mapCols !== mapCols || this.mapRows !== mapRows) {
                     this.isDesktop = newIsDesktop;
-                    this.mapCols = mapCols; 
-                    this.mapRows = mapRows; 
+                    this.mapCols = mapCols; // Store the new dynamic dimensions
+                    this.mapRows = mapRows; // Store the new dynamic dimensions
                     this.configureGameSettings();
                     Input.updateModeDisplay(this.isDesktop);
                     if (this.running) {
+                        // 重新開始遊戲以生成新的地圖
                         this.restart(); 
                     }
                 }
             },
 
             configureGameSettings() {
+                // 根據當前地圖的總面積來調整難度（可選）
                 const totalTiles = this.mapCols * this.mapRows;
-                CONFIG.maxPipeStructures = Math.min(8, Math.floor(totalTiles / 25)); 
+                // 較小的地圖使用較少的敵人/水管，確保遊戲性
+                CONFIG.maxPipeStructures = Math.min(8, Math.floor(totalTiles / 25)); // 根據新的地圖大小調整密度
                 CONFIG.totalEnemies = Math.min(8, Math.floor(totalTiles / 30));
                 
                 if (CONFIG.maxPipeStructures < 4) CONFIG.maxPipeStructures = 4;
@@ -1006,10 +991,7 @@
 
                 document.getElementById('start-modal').classList.remove('show');
                 document.getElementById('end-modal').classList.remove('show');
-                document.getElementById('pause-modal').classList.remove('show');
-                
                 this.running = true;
-                this.paused = false; // 確保開始時是非暫停狀態
                 this.mineCount = 0;
                 this.timeElapsed = 0;
                 this.enemiesKilled = 0;
@@ -1017,7 +999,7 @@
                 this.obstacles = [];
                 this.entities = [];
                 this.generateLevel();
-                
+                // 玩家出生點移到地圖中心
                 this.player = new Player(
                     this.mapCols * CONFIG.tileSize / 2 - 20, 
                     this.mapRows * CONFIG.tileSize / 2 - 20
@@ -1029,37 +1011,11 @@
                 this.updateUI();
             },
 
-            // 重啟功能
-            restart() { 
-                // 關閉暫停選單
-                const pauseModal = document.getElementById('pause-modal');
-                pauseModal.classList.remove('show');
-                this.paused = false;
-                this.start(); 
-            },
-
-            // 暫停功能
-            togglePause() {
-                if (!this.running) return;
-
-                this.paused = !this.paused;
-                const pauseModal = document.getElementById('pause-modal');
-                const btnPause = document.getElementById('btn-pause');
-
-                if (this.paused) {
-                    pauseModal.classList.add('show');
-                    btnPause.innerHTML = '▶️'; // 變更按鈕圖示
-                } else {
-                    pauseModal.classList.remove('show');
-                    btnPause.innerHTML = '⏸️'; // 變更按鈕圖示
-                    // 重要：重置 lastTime，防止暫停後 delta time 過大導致物件瞬移
-                    this.lastTime = performance.now();
-                    requestAnimationFrame((t) => this.loop(t));
-                }
-            },
+            restart() { this.start(); },
 
             generateLevel() {
                 this.grid = [];
+                
                 // Init grid
                 for(let r=0; r<this.mapRows; r++) {
                     let row = [];
@@ -1076,11 +1032,13 @@
 
                 let pipesPlaced = 0;
                 let attempts = 0;
-                while(pipesPlaced < CONFIG.maxPipeStructures && attempts < 400) { 
+                while(pipesPlaced < CONFIG.maxPipeStructures && attempts < 400) { // 增加嘗試次數
                     attempts++;
+                    // 隨機範圍縮小，避免貼邊
                     let r = Math.floor(Math.random() * (this.mapRows - 4)) + 2; 
                     let c = Math.floor(Math.random() * (this.mapCols - 4)) + 2;
                     
+                    // 避免靠近中心點 (玩家初始位置)
                     const centerR = Math.floor(this.mapRows / 2);
                     const centerC = Math.floor(this.mapCols / 2);
                     if (Math.abs(r - centerR) < 3 && Math.abs(c - centerC) < 3) continue;
@@ -1117,6 +1075,7 @@
                     x = c * CONFIG.tileSize;
                     y = r * CONFIG.tileSize;
                     attempts++;
+                    // 避免在玩家出生點附近生成
                     const centerPlayerX = this.mapCols * CONFIG.tileSize / 2;
                     const centerPlayerY = this.mapRows * CONFIG.tileSize / 2;
                     let dist = Math.hypot(x - centerPlayerX, y - centerPlayerY);
@@ -1131,12 +1090,6 @@
 
             loop(now) {
                 if (!this.running) return;
-                
-                // 如果暫停，則不執行更新，並停止請求下一幀 (直到 togglePause 重新啟動)
-                if (this.paused) {
-                    return;
-                }
-
                 const dt = (now - this.lastTime) / 1000;
                 this.lastTime = now;
                 
@@ -1210,7 +1163,14 @@
                 
                 renderList.forEach(obj => obj.draw(ctx));
                 ctx.restore();
+                // 移除 drawMinimap 呼叫
+                // this.drawMinimap();
             },
+
+            // 移除 drawMinimap 函數
+            /* drawMinimap() {
+                // ... (Minimap logic removed)
+            }, */
 
             shakeScreen() {
                 const intensity = 10;
@@ -1223,6 +1183,7 @@
                 el.className = 'floating-text';
                 if(type === 'dolo') el.classList.add('dolo-text');
                 
+                // 轉換世界座標到螢幕座標
                 const screenX = x - Camera.x;
                 const screenY = y - Camera.y;
                 
@@ -1264,6 +1225,7 @@
                     icon.innerText = "✨";
                     title.innerText = "完美淨化！";
                     title.className = "text-5xl font-black text-green-600 mb-4";
+                    // 注入廣告訊息
                     msg.innerHTML = `
                         <p>所有威脅已清除！</p>
                         <p class="text-base font-normal text-slate-500 mt-2">
@@ -2091,3 +2053,4 @@
     </script>
 </body>
 </html>
+
