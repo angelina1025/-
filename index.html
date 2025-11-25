@@ -349,11 +349,6 @@
                     </div>
                 </div>
 
-                <!-- 小地圖已被移除 -->
-                <!-- <div id="minimap-container">
-                    <canvas id="minimap-canvas"></canvas>
-                </div> -->
-
                 <div id="pc-controls-hint">
                     <div class="mb-2 text-slate-400 font-bold border-b border-slate-700 pb-1">操作指南</div>
                     <div class="mb-1"><span class="key-badge">WASD</span> 移動</div>
@@ -498,17 +493,25 @@
             drawCard(320, '通關時間', `${mins}:${secs}`, '#2563eb');
             drawCard(450, '剩餘血量', `${Game.player.hp} / 5`, '#dc2626');
 
-            // 4. 底部日期與浮水印
+            // 4. 底部日期時間與廣告標語
             const now = new Date();
             const dateStr = `${now.getFullYear()}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            
+
+            // 繪製日期時間 (y=650)
             ctx.fillStyle = '#94a3b8';
             ctx.font = '18px monospace';
             ctx.fillText(dateStr, canvas.width/2, 650);
-            
-            ctx.fillStyle = '#cbd5e1';
-            ctx.font = 'bold 24px "Segoe UI", sans-serif';
-            ctx.fillText('DOLO 專業水管清潔', canvas.width/2, 750);
+
+            // 繪製主要的廣告標語 (y=720)
+            const slogan = 'dolo團隊-科技抓漏/洗水管/洗水塔/冷氣清洗';
+            ctx.fillStyle = '#1e293b'; 
+            ctx.font = 'bold 26px "Segoe UI", sans-serif'; // Larger font for main ad
+            ctx.fillText(slogan, canvas.width/2, 720); 
+
+            // 繪製 DOLO 標誌 (y=750)
+            ctx.fillStyle = '#cbd5e1'; 
+            ctx.font = 'bold 18px "Segoe UI", sans-serif'; 
+            ctx.fillText('專業技術支援', canvas.width/2, 750); 
 
             // 5. 下載
             const link = document.createElement('a');
@@ -518,7 +521,8 @@
         }
 
         const CONFIG = {
-            tileSize: 64, // 每個瓦片的大小（像素）
+            // *** 關鍵變動：增加瓦片大小，讓所有元素看起來更大 ***
+            tileSize: 80, // 每個瓦片的大小（像素）
             playerSpeed: 250,
             enemySpeed: 150, 
             enemyWanderSpeed: 20, // Very Slow
@@ -818,9 +822,11 @@
                 const newIsDesktop = containerWidth > 768;
 
                 // --- START 動態地圖格子計算 ---
-                const tileSize = CONFIG.tileSize;
-                const minTilesWide = 16;
-                const minTilesHigh = 16;
+                const tileSize = CONFIG.tileSize; // 80px
+                
+                // *** 關鍵變動：降低最小瓦片數，以適應更大的瓦片尺寸 ***
+                const minTilesWide = 10;
+                const minTilesHigh = 12;
 
                 const containerRatio = containerWidth / containerHeight;
 
@@ -831,12 +837,12 @@
                     // 以最小高度為基準計算，並確保寬度不小於 20 瓦片
                     calculatedMapRows = minTilesHigh;
                     calculatedMapCols = Math.ceil(minTilesHigh * containerRatio);
-                    calculatedMapCols = Math.max(calculatedMapCols, 20); 
+                    calculatedMapCols = Math.max(calculatedMapCols, 16); // 保持最小 16 瓦片寬度
                 } else { // 窄螢幕 (Mobile/Portrait) - 固定寬，高度適應
                     // 以最小寬度為基準計算，並確保高度不小於 20 瓦片
                     calculatedMapCols = minTilesWide;
                     calculatedMapRows = Math.ceil(minTilesWide / containerRatio);
-                    calculatedMapRows = Math.max(calculatedMapRows, 20); 
+                    calculatedMapRows = Math.max(calculatedMapRows, 16); // 保持最小 16 瓦片高度
                 }
                 // --- END 動態地圖格子計算 ---
 
@@ -893,8 +899,8 @@
                 // 根據當前地圖的總面積來調整難度（可選）
                 const totalTiles = this.mapCols * this.mapRows;
                 // 較小的地圖使用較少的敵人/水管，確保遊戲性
-                CONFIG.maxPipeStructures = Math.min(8, Math.floor(totalTiles / 50)); 
-                CONFIG.totalEnemies = Math.min(8, Math.floor(totalTiles / 60));
+                CONFIG.maxPipeStructures = Math.min(8, Math.floor(totalTiles / 25)); // 根據新的地圖大小調整密度
+                CONFIG.totalEnemies = Math.min(8, Math.floor(totalTiles / 30));
                 
                 if (CONFIG.maxPipeStructures < 4) CONFIG.maxPipeStructures = 4;
                 if (CONFIG.totalEnemies < 4) CONFIG.totalEnemies = 4;
@@ -1149,7 +1155,14 @@
                     icon.innerText = "✨";
                     title.innerText = "完美淨化！";
                     title.className = "text-5xl font-black text-green-600 mb-4";
-                    msg.innerText = `所有威脅已清除！`;
+                    // 注入廣告訊息
+                    msg.innerHTML = `
+                        <p>所有威脅已清除！</p>
+                        <p class="text-base font-normal text-slate-500 mt-2">
+                            由 dolo團隊 提供技術支持：<br>
+                            <span class="font-bold text-green-700">科技抓漏 / 洗水管 / 洗水塔 / 冷氣清洗</span>
+                        </p>
+                    `;
                     btnCoupon.classList.remove('hidden');
                     btnSave.classList.remove('hidden');
                     statsContainer.classList.remove('hidden');
