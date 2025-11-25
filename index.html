@@ -134,7 +134,7 @@
             justify-content: space-between;
             align-items: flex-end;
             padding: 0 40px 50px 40px;
-            pointer-events: auto; /* 必須設為 auto 才能接收觸摸事件 */
+            pointer-events: none; /* 改為 none，讓點擊穿透到背景 */
         }
 
         /* 搖桿樣式 - 放大 */
@@ -148,6 +148,7 @@
             backdrop-filter: blur(4px);
             /* 搖桿區域允許觸摸，但禁用瀏覽器手勢 */
             touch-action: none; 
+            pointer-events: auto; /* 恢復搖桿互動 */
         }
         
         .joystick-knob {
@@ -165,7 +166,12 @@
         }
         .joystick-knob.active { transition: none; }
 
-        .actions-cluster { display: flex; gap: 30px; align-items: flex-end; }
+        .actions-cluster { 
+            display: flex; 
+            gap: 30px; 
+            align-items: flex-end; 
+            pointer-events: auto; /* 恢復按鈕互動 */
+        }
 
         .btn-circle {
             border-radius: 50%;
@@ -339,9 +345,40 @@
             padding: 6px 16px;
             border-radius: 20px;
         }
+
+        /* 旋轉提示層 */
+        #rotate-hint {
+            display: none; /* 預設隱藏 */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            cursor: pointer; /* 提示可點擊 */
+        }
+        #rotate-hint .icon { font-size: 60px; margin-bottom: 20px; animation: rotate-icon 2s infinite ease-in-out; }
+        @keyframes rotate-icon {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-90deg); }
+            50% { transform: rotate(-90deg); }
+            75% { transform: rotate(0deg); }
+            100% { transform: rotate(0deg); }
+        }
     </style>
 </head>
 <body>
+
+    <!-- 旋轉手機提示 (點擊可關閉) -->
+    <div id="rotate-hint" onclick="closeRotateHint()">
+        <div class="icon">📱</div>
+        <h2 class="text-2xl font-bold mb-2">建議旋轉手機</h2>
+        <p class="text-slate-300 mb-4">獲得最佳遊戲體驗 (橫向操作)</p>
+        <div class="px-6 py-2 bg-white/20 text-white border border-white/50 rounded-full font-bold text-lg backdrop-blur-sm">點擊關閉</div>
+    </div>
 
     <!-- 新增外層容器：Game Container (100% 視窗大小) -->
     <div id="game-container">
@@ -481,6 +518,11 @@
             if(btnModal) btnModal.innerHTML = isFs ? '↩ 退出全螢幕' : '⛶ 全螢幕遊玩';
         }
 
+        function closeRotateHint() {
+            const hint = document.getElementById('rotate-hint');
+            if(hint) hint.style.display = 'none';
+        }
+
         async function toggleFullscreen() {
             if (!document.fullscreenElement) {
                 try {
@@ -491,6 +533,13 @@
                             console.log('Orientation lock failed (usually requires user gesture or standalone mode):', err);
                         });
                     }
+                    
+                    // 檢查是否為直式，如果是則顯示提示
+                    if (window.innerHeight > window.innerWidth) {
+                         const hint = document.getElementById('rotate-hint');
+                         if(hint) hint.style.display = 'flex';
+                    }
+
                 } catch (err) {
                     console.log('Error attempting to enable full-screen mode:', err);
                 }
@@ -889,8 +938,9 @@
             },
 
             handleResize(containerWidth, containerHeight) {
-                // 1. 判定模式 (跟隨網頁 CSS 斷點: 768px)
-                const newIsDesktop = containerWidth > 768;
+                // 1. 判定模式 (修正為：只要支援觸控，就視為手機模式，避免寬度判斷錯誤)
+                const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                const newIsDesktop = !isTouch && (containerWidth > 768);
 
                 // --- START 動態地圖格子計算 ---
                 const tileSize = CONFIG.tileSize; // 80px
