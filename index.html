@@ -24,7 +24,7 @@
             width: 100%;
             height: 100%;
             /* 關鍵：防止內容溢出導致的滾動條 */
-            overflow: hidden; 
+            overflow: hidden;
             background-color: #0f172a;
         }
 
@@ -64,7 +64,7 @@
             height: 100%;
             z-index: 10;
             /* 讓點擊事件穿透到下面的元素，除非有互動元素 */
-            pointer-events: none; 
+            pointer-events: none;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -117,7 +117,7 @@
             cursor: pointer; /* 讓按鈕有手型鼠標 */
             transition: transform 0.1s, background-color 0.2s;
         }
-        
+
         .stat-badge:active {
             transform: skewX(-5deg) translateY(2px);
             box-shadow: 0 2px 0 rgba(0,0,0,0.2);
@@ -134,7 +134,7 @@
             justify-content: space-between;
             align-items: flex-end;
             padding: 0 40px 50px 40px;
-            pointer-events: none; /* 改為 none，讓點擊穿透到背景 */
+            pointer-events: auto; /* 必須設為 auto 才能接收觸摸事件 */
         }
 
         /* 搖桿樣式 - 放大 */
@@ -147,10 +147,9 @@
             position: relative;
             backdrop-filter: blur(4px);
             /* 搖桿區域允許觸摸，但禁用瀏覽器手勢 */
-            touch-action: none; 
-            pointer-events: auto; /* 恢復搖桿互動 */
+            touch-action: none;
         }
-        
+
         .joystick-knob {
             width: 90px; /* 70 -> 90 */
             height: 90px;
@@ -166,12 +165,7 @@
         }
         .joystick-knob.active { transition: none; }
 
-        .actions-cluster { 
-            display: flex; 
-            gap: 30px; 
-            align-items: flex-end; 
-            pointer-events: auto; /* 恢復按鈕互動 */
-        }
+        .actions-cluster { display: flex; gap: 30px; align-items: flex-end; }
 
         .btn-circle {
             border-radius: 50%;
@@ -184,10 +178,10 @@
             border: 3px solid rgba(255,255,255,0.3);
             position: relative;
             /* 按鈕禁用瀏覽器手勢 */
-            touch-action: none; 
+            touch-action: none;
             backdrop-filter: blur(4px);
         }
-        
+
         .btn-circle:active { transform: scale(0.92) translateY(4px); filter: brightness(0.9); }
 
         #btn-shoot {
@@ -241,7 +235,7 @@
             pointer-events: auto; opacity: 0; transition: opacity 0.3s; pointer-events: none;
         }
         .modal.show { opacity: 1; pointer-events: auto; }
-        
+
         .modal-content {
             background: #f8fafc; width: 85%; max-width: 500px;
             padding: 40px; border-radius: 32px; text-align: center;
@@ -260,7 +254,7 @@
             transition: transform 0.1s;
         }
         .btn-primary:active { transform: translateY(4px); box-shadow: 0 2px 0 #14532d; }
-        
+
         .btn-line {
             background: linear-gradient(to bottom, #06c755, #059b42);
             box-shadow: 0 8px 0 #036b2d;
@@ -310,10 +304,10 @@
             white-space: nowrap;
             z-index: 15;
         }
-        
+
         .end-stats {
             display: flex;
-            flex-direction: column; 
+            flex-direction: column;
             align-items: center;
             gap: 20px;
             margin: 20px 0 30px 0;
@@ -345,40 +339,9 @@
             padding: 6px 16px;
             border-radius: 20px;
         }
-
-        /* 旋轉提示層 */
-        #rotate-hint {
-            display: none; /* 預設隱藏 */
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            z-index: 100;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            text-align: center;
-            cursor: pointer; /* 提示可點擊 */
-        }
-        #rotate-hint .icon { font-size: 60px; margin-bottom: 20px; animation: rotate-icon 2s infinite ease-in-out; }
-        @keyframes rotate-icon {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(-90deg); }
-            50% { transform: rotate(-90deg); }
-            75% { transform: rotate(0deg); }
-            100% { transform: rotate(0deg); }
-        }
     </style>
 </head>
 <body>
-
-    <!-- 旋轉手機提示 (點擊可關閉) -->
-    <div id="rotate-hint" onclick="closeRotateHint()">
-        <div class="icon">📱</div>
-        <h2 class="text-2xl font-bold mb-2">建議旋轉手機</h2>
-        <p class="text-slate-300 mb-4">獲得最佳遊戲體驗 (橫向操作)</p>
-        <div class="px-6 py-2 bg-white/20 text-white border border-white/50 rounded-full font-bold text-lg backdrop-blur-sm">點擊關閉</div>
-    </div>
 
     <!-- 新增外層容器：Game Container (100% 視窗大小) -->
     <div id="game-container">
@@ -445,7 +408,7 @@
                     <div class="text-7xl mb-4">🚰</div>
                     <h1 class="text-4xl font-black text-slate-800 mb-2 tracking-tight">戰鬥吧!水教官!!</h1>
                     <p class="text-slate-500 mb-8 font-medium text-xl">Dolo 團隊專業技術支援</p>
-                    
+
                     <div class="bg-slate-100 p-6 rounded-2xl text-left text-lg text-slate-700 space-y-4 mb-8 border border-slate-200 shadow-inner">
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 rounded-full bg-white shadow flex items-center justify-center text-2xl">🦠</div>
@@ -465,7 +428,7 @@
                     </div>
 
                     <button class="btn-primary" onclick="Game.start()">開始任務</button>
-                    
+
                     <!-- 新增彈窗內的全螢幕按鈕 -->
                     <button id="btn-fullscreen-modal" class="mt-4 w-full py-3 rounded-xl font-bold text-lg text-slate-500 bg-slate-200 hover:bg-slate-300 transition-colors" onclick="toggleFullscreen()">
                         ⛶ 全螢幕遊玩
@@ -479,11 +442,11 @@
                     <div id="end-icon" class="text-8xl mb-4">🏆</div>
                     <h2 id="end-title" class="text-5xl font-black text-slate-800 mb-4">任務完成</h2>
                     <p id="end-msg" class="text-slate-600 mb-6 font-bold text-2xl">區域已淨化！</p>
-                    
+
                     <div id="end-stats-container" class="end-stats hidden">
                         <!-- JS 會填入內容 -->
                     </div>
-                    
+
                     <button id="btn-coupon" class="btn-primary btn-line hidden mb-6 text-2xl py-5" onclick="openLineCoupon()">
                         🎁 領取 LINE 優惠券
                     </button>
@@ -501,14 +464,14 @@
     </div>
 
     <script>
-        const LINE_COUPON_URL = "https://lin.ee/eUHT4zO"; 
+        const LINE_COUPON_URL = "https://lin.ee/eUHT4zO";
         function openLineCoupon() { window.open(LINE_COUPON_URL, '_blank'); }
 
         // --- 全螢幕切換功能 (更新以支援多個按鈕) ---
-        
+
         function updateFullscreenButtons() {
             const isFs = !!document.fullscreenElement;
-            
+
             // 更新右上角按鈕
             const btnMain = document.getElementById('btn-fullscreen');
             if(btnMain) btnMain.innerHTML = isFs ? '↩ 退出' : '⛶ 全螢幕';
@@ -516,11 +479,6 @@
             // 更新彈窗內按鈕
             const btnModal = document.getElementById('btn-fullscreen-modal');
             if(btnModal) btnModal.innerHTML = isFs ? '↩ 退出全螢幕' : '⛶ 全螢幕遊玩';
-        }
-
-        function closeRotateHint() {
-            const hint = document.getElementById('rotate-hint');
-            if(hint) hint.style.display = 'none';
         }
 
         async function toggleFullscreen() {
@@ -533,13 +491,6 @@
                             console.log('Orientation lock failed (usually requires user gesture or standalone mode):', err);
                         });
                     }
-                    
-                    // 檢查是否為直式，如果是則顯示提示
-                    if (window.innerHeight > window.innerWidth) {
-                         const hint = document.getElementById('rotate-hint');
-                         if(hint) hint.style.display = 'flex';
-                    }
-
                 } catch (err) {
                     console.log('Error attempting to enable full-screen mode:', err);
                 }
@@ -567,7 +518,7 @@
             // 1. 背景
             ctx.fillStyle = '#f1f5f9';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
+
             // 頂部裝飾條
             const grad = ctx.createLinearGradient(0, 0, 0, 150);
             grad.addColorStop(0, '#3b82f6');
@@ -597,7 +548,7 @@
                 ctx.shadowOffsetY = 5;
                 ctx.fillRect(100, y, 400, 100);
                 ctx.shadowColor = 'transparent'; // reset
-                
+
                 ctx.fillStyle = '#94a3b8';
                 ctx.font = '20px "Segoe UI", sans-serif';
                 ctx.fillText(label, canvas.width/2, y + 35);
@@ -624,14 +575,14 @@
 
             // 繪製主要的廣告標語 (y=720)
             const slogan = 'dolo團隊-科技抓漏/洗水管/洗水塔/冷氣清洗';
-            ctx.fillStyle = '#1e293b'; 
+            ctx.fillStyle = '#1e293b';
             ctx.font = 'bold 26px "Segoe UI", sans-serif'; // Larger font for main ad
-            ctx.fillText(slogan, canvas.width/2, 720); 
+            ctx.fillText(slogan, canvas.width/2, 720);
 
             // 繪製 DOLO 標誌 (y=750)
-            ctx.fillStyle = '#cbd5e1'; 
-            ctx.font = 'bold 18px "Segoe UI", sans-serif'; 
-            ctx.fillText('專業技術支援', canvas.width/2, 750); 
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 18px "Segoe UI", sans-serif';
+            ctx.fillText('專業技術支援', canvas.width/2, 750);
 
             // 5. 下載
             const link = document.createElement('a');
@@ -644,15 +595,15 @@
             // *** 關鍵變動：增加瓦片大小，讓所有元素看起來更大 ***
             tileSize: 80, // 每個瓦片的大小（像素）
             playerSpeed: 250,
-            enemySpeed: 150, 
+            enemySpeed: 150,
             enemyWanderSpeed: 20, // Very Slow
             enemyAggroRange: 300,
             totalEnemies: 8, // 動態設定
             maxPipeStructures: 8, // 動態設定
-            cleanTimePerTile: 0.5, 
-            dirtRegrowRate: 0.4, 
+            cleanTimePerTile: 0.5,
+            dirtRegrowRate: 0.4,
             colors: {
-                bg: '#334155', 
+                bg: '#334155',
                 floorLight: '#475569',
                 floorDark: '#334155',
                 wallTop: '#94a3b8',
@@ -661,14 +612,14 @@
                 water: '#38bdf8',
                 lightwave: '#fef08a',
                 explosionBlue: '#60a5fa',
-                pipeBase: '#3b82f6',     
-                pipeShadow: '#1e3a8a',   
-                pipeHighlight: '#93c5fd',  
-                pipeSpecular: '#ffffff',   
-                connector: '#94a3b8',     
-                connectorTop: '#cbd5e1',   
-                sludgeBase: '#713f12',     
-                sludgeDetail: '#a16207'     
+                pipeBase: '#3b82f6',
+                pipeShadow: '#1e3a8a',
+                pipeHighlight: '#93c5fd',
+                pipeSpecular: '#ffffff',
+                connector: '#94a3b8',
+                connectorTop: '#cbd5e1',
+                sludgeBase: '#713f12',
+                sludgeDetail: '#a16207'
             }
         };
 
@@ -677,17 +628,17 @@
             [{c:0, r:0}, {c:0, r:1}],
             [{c:0, r:0}, {c:1, r:0}, {c:2, r:0}],
             [{c:0, r:0}, {c:0, r:1}, {c:0, r:2}],
-            [{c:0, r:0}, {c:1, r:0}, {c:0, r:1}], 
+            [{c:0, r:0}, {c:1, r:0}, {c:0, r:1}],
             [{c:0, r:0}, {c:1, r:0}, {c:1, r:1}],
             [{c:1, r:1}, {c:0, r:1}, {c:2, r:1}, {c:1, r:0}, {c:1, r:2}],
             [{c:0, r:0}, {c:1, r:0}, {c:2, r:0}, {c:1, r:1}]
         ];
 
         const Input = {
-            mode: 'touch', 
+            mode: 'touch',
             keys: { w: false, a: false, s: false, d: false, space: false, b: false },
             move: { x: 0, y: 0 },
-            
+
             init() {
                 window.addEventListener('keydown', e => this.onKey(e, true));
                 window.addEventListener('keyup', e => this.onKey(e, false));
@@ -699,7 +650,7 @@
                 const hintEl = document.getElementById('dynamic-controls-hint');
                 const controlsArea = document.querySelector('.controls-area');
                 const pcHint = document.getElementById('pc-controls-hint');
-                const scaler = document.getElementById('game-scaler'); 
+                const scaler = document.getElementById('game-scaler');
 
                 if (isDesktop) {
                     this.mode = 'keyboard';
@@ -736,13 +687,13 @@
             initTouchButtons() {
                 const btnShoot = document.getElementById('btn-shoot');
                 const btnMine = document.getElementById('btn-mine');
-                
+
                 const startShoot = (e) => {
                     e.preventDefault();
                     if(!Game.running) return;
                     Game.player.shoot();
                     if(!this.shootInterval) {
-                        this.shootInterval = setInterval(() => Game.player.shoot(), 80); 
+                        this.shootInterval = setInterval(() => Game.player.shoot(), 80);
                     }
                     btnShoot.style.transform = 'scale(0.92) translateY(4px)';
                 };
@@ -778,7 +729,7 @@
                     if (this.keys.d) this.move.x += 1;
                     if (this.keys.w) this.move.y -= 1;
                     if (this.keys.s) this.move.y += 1;
-                    
+
                     const len = Math.sqrt(this.move.x**2 + this.move.y**2);
                     if(len > 0) {
                         this.move.x /= len;
@@ -800,14 +751,14 @@
         const Joystick = {
             active: false,
             origin: { x: 0, y: 0 },
-            vector: { x: 0, y: 0 }, 
+            vector: { x: 0, y: 0 },
             touchId: null,
             radius: 110, /* 增加可拖曳半徑以配合變大的搖桿 */
-            
+
             init() {
                 const zone = document.getElementById('joystick-zone');
                 const knob = document.getElementById('joystick-knob');
-                
+
                 const startHandler = (e) => {
                     e.preventDefault();
                     const touch = e.changedTouches ? e.changedTouches[0] : e;
@@ -849,7 +800,7 @@
                                 break;
                             }
                         }
-                    } 
+                    }
                     if (shouldReset) this.reset();
                 };
 
@@ -892,7 +843,7 @@
             x: 0, y: 0,
             follow(target) {
                 // 調整：禁用相機追蹤，實現全圖視野
-                this.x = 0; 
+                this.x = 0;
                 this.y = 0;
             }
         };
@@ -913,13 +864,13 @@
             obstacles: [],
             mineCount: 0,
             enemiesKilled: 0,
-            player: null, 
+            player: null,
             lastWin: false,
-            isDesktop: undefined, 
-            
+            isDesktop: undefined,
+
             init() {
-                Input.init(); 
-                
+                Input.init();
+
                 // 使用 ResizeObserver 確保在任何設備和方向上都能完美縮放
                 const gameContainer = document.getElementById('game-container');
                 const resizeObserver = new ResizeObserver(entries => {
@@ -938,13 +889,12 @@
             },
 
             handleResize(containerWidth, containerHeight) {
-                // 1. 判定模式 (修正為：只要支援觸控，就視為手機模式，避免寬度判斷錯誤)
-                const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-                const newIsDesktop = !isTouch && (containerWidth > 768);
+                // 1. 判定模式 (跟隨網頁 CSS 斷點: 768px)
+                const newIsDesktop = containerWidth > 768;
 
                 // --- START 動態地圖格子計算 ---
                 const tileSize = CONFIG.tileSize; // 80px
-                
+
                 // *** 關鍵變動：降低最小瓦片數，以適應更大的瓦片尺寸 ***
                 const minTilesWide = 10;
                 const minTilesHigh = 12;
@@ -978,8 +928,8 @@
                 // 4. 計算縮放比例 (Cover/填滿模式)
                 const scaleX = containerWidth / virtualWidth;
                 const scaleY = containerHeight / virtualHeight;
-                const scale = Math.max(scaleX, scaleY); 
-                
+                const scale = Math.max(scaleX, scaleY);
+
                 // 5. 應用縮放
                 const scaler = document.getElementById('game-scaler');
                 scaler.style.width = `${virtualWidth}px`;
@@ -999,8 +949,8 @@
                 // 7. 更新 Canvas 解析度
                 canvas.width = virtualWidth;
                 canvas.height = virtualHeight;
-                
-                ctx.imageSmoothingEnabled = false; 
+
+                ctx.imageSmoothingEnabled = false;
 
                 // 8. 如果地圖尺寸或模式改變，重新配置遊戲設定
                 if (this.isDesktop !== newIsDesktop || this.mapCols !== mapCols || this.mapRows !== mapRows) {
@@ -1011,7 +961,7 @@
                     Input.updateModeDisplay(this.isDesktop);
                     if (this.running) {
                         // 重新開始遊戲以生成新的地圖
-                        this.restart(); 
+                        this.restart();
                     }
                 }
             },
@@ -1022,7 +972,7 @@
                 // 較小的地圖使用較少的敵人/水管，確保遊戲性
                 CONFIG.maxPipeStructures = Math.min(8, Math.floor(totalTiles / 25)); // 根據新的地圖大小調整密度
                 CONFIG.totalEnemies = Math.min(8, Math.floor(totalTiles / 30));
-                
+
                 if (CONFIG.maxPipeStructures < 4) CONFIG.maxPipeStructures = 4;
                 if (CONFIG.totalEnemies < 4) CONFIG.totalEnemies = 4;
 
@@ -1052,7 +1002,7 @@
                 this.generateLevel();
                 // 玩家出生點移到地圖中心
                 this.player = new Player(
-                    this.mapCols * CONFIG.tileSize / 2 - 20, 
+                    this.mapCols * CONFIG.tileSize / 2 - 20,
                     this.mapRows * CONFIG.tileSize / 2 - 20
                 );
                 this.entities.push(this.player);
@@ -1066,7 +1016,7 @@
 
             generateLevel() {
                 this.grid = [];
-                
+
                 // Init grid
                 for(let r=0; r<this.mapRows; r++) {
                     let row = [];
@@ -1075,7 +1025,7 @@
                             row.push(1);
                             this.obstacles.push(new Wall(c*CONFIG.tileSize, r*CONFIG.tileSize));
                         } else {
-                            row.push(0); 
+                            row.push(0);
                         }
                     }
                     this.grid.push(row);
@@ -1086,16 +1036,16 @@
                 while(pipesPlaced < CONFIG.maxPipeStructures && attempts < 400) { // 增加嘗試次數
                     attempts++;
                     // 隨機範圍縮小，避免貼邊
-                    let r = Math.floor(Math.random() * (this.mapRows - 4)) + 2; 
+                    let r = Math.floor(Math.random() * (this.mapRows - 4)) + 2;
                     let c = Math.floor(Math.random() * (this.mapCols - 4)) + 2;
-                    
+
                     // 避免靠近中心點 (玩家初始位置)
                     const centerR = Math.floor(this.mapRows / 2);
                     const centerC = Math.floor(this.mapCols / 2);
                     if (Math.abs(r - centerR) < 3 && Math.abs(c - centerC) < 3) continue;
 
                     const shapeTemplate = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-                    
+
                     let canPlace = true;
                     let segments = [];
                     for(let block of shapeTemplate) {
@@ -1111,7 +1061,7 @@
                     if(canPlace) {
                         const pipe = new Pipe(segments);
                         this.obstacles.push(pipe);
-                        segments.forEach(s => this.grid[s.r][s.c] = 1); 
+                        segments.forEach(s => this.grid[s.r][s.c] = 1);
                         pipesPlaced++;
                     }
                 }
@@ -1143,7 +1093,7 @@
                 if (!this.running) return;
                 const dt = (now - this.lastTime) / 1000;
                 this.lastTime = now;
-                
+
                 Input.update();
                 this.update(dt);
                 this.draw();
@@ -1167,16 +1117,16 @@
                 this.obstacles = this.obstacles.filter(o => !o.dead);
 
                 if (this.player.hp <= 0) this.gameOver(false);
-                
+
                 const dirtyPipes = this.obstacles.filter(o => o instanceof Pipe && o.dirty).length;
                 const enemiesLeft = CONFIG.totalEnemies - this.enemiesKilled;
-                
+
                 document.getElementById('obj-text').innerText = `剩餘細菌: ${enemiesLeft} | 髒水管: ${dirtyPipes}`;
                 if (enemiesLeft <= 0 && dirtyPipes <= 0) this.gameOver(true);
             },
 
             draw() {
-                ctx.fillStyle = '#1e293b'; 
+                ctx.fillStyle = '#1e293b';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 ctx.save();
@@ -1207,11 +1157,11 @@
                 // 繪製光波
                 const lightWaves = this.entities.filter(e => e instanceof LightWave);
                 lightWaves.forEach(w => w.draw(ctx));
-                
+
                 // 依 Y 軸排序繪製（實現偽 3D）
                 const renderList = [...this.obstacles, ...this.entities.filter(e => !(e instanceof LightWave)), ...this.particles];
                 renderList.sort((a, b) => (a.y + (a.h || 0)) - (b.y + (b.h || 0)));
-                
+
                 renderList.forEach(obj => obj.draw(ctx));
                 ctx.restore();
                 // 移除 drawMinimap 呼叫
@@ -1233,16 +1183,16 @@
                 const el = document.createElement('div');
                 el.className = 'floating-text';
                 if(type === 'dolo') el.classList.add('dolo-text');
-                
+
                 // 轉換世界座標到螢幕座標
                 const screenX = x - Camera.x;
                 const screenY = y - Camera.y;
-                
-                el.style.left = screenX + 'px'; 
+
+                el.style.left = screenX + 'px';
                 el.style.top = screenY + 'px';
                 el.style.color = color;
                 el.innerText = text;
-                document.getElementById('game-layer').parentNode.appendChild(el); 
+                document.getElementById('game-layer').parentNode.appendChild(el);
                 setTimeout(() => el.remove(), 2000);
             },
 
@@ -1287,10 +1237,10 @@
                     btnCoupon.classList.remove('hidden');
                     btnSave.classList.remove('hidden');
                     statsContainer.classList.remove('hidden');
-                    
+
                     let mins = Math.floor(this.timeElapsed/60).toString().padStart(2,'0');
                     let secs = Math.floor(this.timeElapsed%60).toString().padStart(2,'0');
-                    
+
                     const now = new Date();
                     const dateStr = `${now.getFullYear()}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
@@ -1346,16 +1296,16 @@
             update(dt) {
                 this.vx = Input.move.x * this.speed * dt;
                 this.vy = Input.move.y * this.speed * dt;
-                
+
                 if (Math.abs(Input.move.x) > 0.1 || Math.abs(Input.move.y) > 0.1) {
                     this.facing = { ...Input.move };
                 }
 
                 if (!this.isValidMove(this.x + this.vx, this.y)) this.vx = 0;
                 if (!this.isValidMove(this.x, this.y + this.vy)) this.vy = 0;
-                
+
                 super.update(dt);
-                
+
                 const maxX = Game.mapCols * CONFIG.tileSize - this.w;
                 const maxY = Game.mapRows * CONFIG.tileSize - this.h;
                 if (this.x < 0) this.x = 0;
@@ -1381,10 +1331,10 @@
             }
             shoot() {
                 const now = Date.now();
-                if (now - this.lastShot > 80) { 
+                if (now - this.lastShot > 80) {
                     this.lastShot = now;
                     let mag = Math.sqrt(this.facing.x**2 + this.facing.y**2);
-                    if (mag === 0) mag = 1; 
+                    if (mag === 0) mag = 1;
                     Game.entities.push(new Bullet(this.center.x, this.center.y, (this.facing.x/mag), (this.facing.y/mag)));
                 }
             }
@@ -1414,7 +1364,7 @@
                 ctx.beginPath(); ctx.ellipse(0, 15, 12, 5, 0, 0, Math.PI*2); ctx.fill();
 
                 if (this.invincible > 0 && Math.floor(Date.now()/100)%2) ctx.globalAlpha = 0.5;
-                
+
                 // 縮放角色繪製（1.5倍放大）
                 const scaleFactor = 1.5;
                 const dir = this.facing.x < 0 ? -1 : 1;
@@ -1423,31 +1373,31 @@
                 // 3D Character Drawing
                 const legGrad = ctx.createLinearGradient(-8, 0, 2, 0);
                 legGrad.addColorStop(0, '#172554'); legGrad.addColorStop(0.5, '#1e40af'); legGrad.addColorStop(1, '#172554');
-                ctx.fillStyle = legGrad; 
-                ctx.fillRect(-8, 10, 6, 12); 
-                
+                ctx.fillStyle = legGrad;
+                ctx.fillRect(-8, 10, 6, 12);
+
                 const rightLegGrad = ctx.createLinearGradient(2, 0, 12, 0);
                 rightLegGrad.addColorStop(0, '#172554'); rightLegGrad.addColorStop(0.5, '#1e40af'); rightLegGrad.addColorStop(1, '#172554');
                 ctx.fillStyle = rightLegGrad;
-                ctx.fillRect(2, 10, 6, 12); 
+                ctx.fillRect(2, 10, 6, 12);
 
                 const bodyGrad = ctx.createLinearGradient(-10, 0, 10, 0);
                 bodyGrad.addColorStop(0, '#14532d'); bodyGrad.addColorStop(0.5, '#16a34a'); bodyGrad.addColorStop(1, '#14532d');
                 ctx.fillStyle = bodyGrad;
-                ctx.fillRect(-10, -5, 20, 18); 
+                ctx.fillRect(-10, -5, 20, 18);
                 ctx.fillRect(-14, -5, 4, 8); ctx.fillRect(10, -5, 4, 8);
 
                 const headGrad = ctx.createLinearGradient(-9, 0, 9, 0);
                 headGrad.addColorStop(0, '#fcd34d'); headGrad.addColorStop(0.5, '#fde68a'); headGrad.addColorStop(1, '#fcd34d');
                 ctx.fillStyle = headGrad;
-                ctx.fillRect(-9, -22, 18, 18); 
+                ctx.fillRect(-9, -22, 18, 18);
 
                 ctx.fillStyle = '#0f172a';
-                ctx.fillRect(-8, -16, 6, 4); ctx.fillRect(2, -16, 6, 4); ctx.fillRect(-2, -15, 4, 1); 
+                ctx.fillRect(-8, -16, 6, 4); ctx.fillRect(2, -16, 6, 4); ctx.fillRect(-2, -15, 4, 1);
                 ctx.fillStyle = '#bfdbfe'; ctx.fillRect(-7, -15, 4, 2); ctx.fillRect(3, -15, 4, 2);
 
                 ctx.fillStyle = '#020617';
-                ctx.fillRect(-10, -25, 20, 6); ctx.fillRect(-10, -25, 4, 15); 
+                ctx.fillRect(-10, -25, 20, 6); ctx.fillRect(-10, -25, 4, 15);
 
                 ctx.restore();
             }
@@ -1458,11 +1408,11 @@
                 super(x, y, 40, 40);
                 this.maxSpeed = CONFIG.enemySpeed;
                 this.wanderSpeed = CONFIG.enemyWanderSpeed;
-                this.hp = 6; 
+                this.hp = 6;
                 this.type = 'enemy';
                 this.wanderTimer = 0;
                 this.wanderDir = {x: 0, y: 0};
-                this.state = 'wander'; 
+                this.state = 'wander';
                 this.animOffset = Math.random() * 100;
             }
             update(dt) {
@@ -1470,7 +1420,7 @@
                 const dx = p.x - this.x;
                 const dy = p.y - this.y;
                 const dist = Math.hypot(dx, dy);
-                
+
                 // 細菌的追逐範圍
                 if (dist < CONFIG.enemyAggroRange) this.state = 'chase';
                 else this.state = 'wander';
@@ -1487,7 +1437,7 @@
                     currentSpeed = this.wanderSpeed;
                     this.wanderTimer -= dt;
                     if (this.wanderTimer <= 0) {
-                        this.wanderTimer = 2 + Math.random() * 2; 
+                        this.wanderTimer = 2 + Math.random() * 2;
                         const angle = Math.random() * Math.PI * 2;
                         this.wanderDir = { x: Math.cos(angle) * currentSpeed * dt, y: Math.sin(angle) * currentSpeed * dt };
                     }
@@ -1505,7 +1455,7 @@
                 const nextX = this.x + this.vx;
                 const nextY = this.y + this.vy;
                 if(this.isValidPos(nextX, this.y)) this.x = nextX;
-                else if (this.state === 'wander') this.wanderTimer = 0; 
+                else if (this.state === 'wander') this.wanderTimer = 0;
                 if(this.isValidPos(this.x, nextY)) this.y = nextY;
                 else if (this.state === 'wander') this.wanderTimer = 0;
                 if (this.checkCollision(p)) p.takeDamage(1);
@@ -1527,24 +1477,24 @@
             draw(ctx) {
                 ctx.save();
                 ctx.translate(this.center.x, this.center.y);
-                
+
                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
                 ctx.beginPath(); ctx.ellipse(0, 10, 12, 6, 0, 0, Math.PI*2); ctx.fill();
 
                 const bounce = Math.sin(Date.now() / 150 + this.animOffset) * 0.1;
                 ctx.scale(1 - bounce, 1 + bounce);
-                
+
                 // 邏輯修改：攻擊狀態變紅色
                 const isChasing = this.state === 'chase';
                 ctx.fillStyle = isChasing ? '#ef4444' : '#8b5cf6'; // 攻擊紅 / 平時紫
 
-                ctx.beginPath(); 
+                ctx.beginPath();
                 ctx.moveTo(-15, 10);
                 ctx.quadraticCurveTo(-15, -15, 0, -15);
                 ctx.quadraticCurveTo(15, -15, 15, 10);
                 ctx.lineTo(-15, 10);
                 ctx.fill();
-                
+
                 ctx.fillStyle = 'rgba(255,255,255,0.2)';
                 ctx.beginPath(); ctx.ellipse(-6, -6, 4, 2, -0.5, 0, Math.PI*2); ctx.fill();
 
@@ -1561,17 +1511,17 @@
                     ctx.beginPath(); ctx.arc(6, -2, 1, 0, Math.PI*2); ctx.fill();
                 }
                 ctx.restore();
-                
+
                 ctx.fillStyle = 'red'; ctx.fillRect(this.x, this.y - 15, this.w, 4);
                 ctx.fillStyle = '#22c55e'; ctx.fillRect(this.x, this.y - 15, this.w * (this.hp/6), 4);
             }
         }
 
         class LightWave extends Entity {
-            constructor(beams) { 
-                super(0, 0, 0, 0); 
+            constructor(beams) {
+                super(0, 0, 0, 0);
                 this.beams = beams;
-                this.lifespan = 0.5; 
+                this.lifespan = 0.5;
             }
             update(dt) {
                 this.lifespan -= dt;
@@ -1579,7 +1529,7 @@
                 Game.entities.forEach(e => {
                     if (e.type === 'enemy') {
                         if (this.checkHit(e)) {
-                            e.takeDamage(10); 
+                            e.takeDamage(10);
                             Game.particles.push(new Particle(e.center.x, e.center.y, 'explosion'));
                         }
                     }
@@ -1594,10 +1544,10 @@
             }
             draw(ctx) {
                 ctx.save();
-                ctx.globalAlpha = this.lifespan * 2; 
+                ctx.globalAlpha = this.lifespan * 2;
                 ctx.fillStyle = CONFIG.colors.lightwave;
                 ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 20;
-                
+
                 this.beams.forEach(beam => {
                     ctx.fillRect(beam.x, beam.y, beam.w, beam.h);
                 });
@@ -1605,7 +1555,7 @@
                 ctx.shadowBlur = 0;
                 ctx.fillStyle = '#fff';
                 ctx.globalAlpha = this.lifespan;
-                
+
                 this.beams.forEach(beam => {
                     // Draw thinner inner beam
                     let ix = beam.x, iy = beam.y, iw = beam.w, ih = beam.h;
@@ -1624,12 +1574,12 @@
             constructor(x, y, dx, dy) {
                 super(x, y, 10, 10);
                 this.vx = dx * 500; this.vy = dy * 500;
-                this.life = 0.6; 
+                this.life = 0.6;
             }
             update(dt) {
                 this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
                 if (this.life <= 0) this.dead = true;
-                
+
                 let pipeHit = false;
                 for(const obj of Game.obstacles) {
                     if(obj instanceof Pipe) {
@@ -1638,7 +1588,7 @@
                             pipeHit = true;
                             this.dead = true;
                             break;
-                        } else if (checkCollision(this, obj.boundingBox)) { 
+                        } else if (checkCollision(this, obj.boundingBox)) {
                              this.dead = true;
                              Game.particles.push(new Particle(this.x, this.y, 'water'));
                              break;
@@ -1666,14 +1616,14 @@
                 const angle = Math.atan2(this.vy, this.vx);
                 ctx.rotate(angle);
                 const grad = ctx.createLinearGradient(-20, 0, 10, 0);
-                grad.addColorStop(0, 'rgba(59, 130, 246, 0)');   
-                grad.addColorStop(0.5, 'rgba(59, 130, 246, 0.8)'); 
-                grad.addColorStop(1, 'rgba(255, 255, 255, 1)');   
+                grad.addColorStop(0, 'rgba(59, 130, 246, 0)');
+                grad.addColorStop(0.5, 'rgba(59, 130, 246, 0.8)');
+                grad.addColorStop(1, 'rgba(255, 255, 255, 1)');
                 ctx.fillStyle = grad;
                 ctx.beginPath();
-                ctx.moveTo(10, 0); 
-                ctx.quadraticCurveTo(0, 6, -25, 0); 
-                ctx.quadraticCurveTo(0, -6, 10, 0); 
+                ctx.moveTo(10, 0);
+                ctx.quadraticCurveTo(0, 6, -25, 0);
+                ctx.quadraticCurveTo(0, -6, 10, 0);
                 ctx.fill();
                 ctx.fillStyle = 'rgba(191, 219, 254, 0.6)';
                 ctx.beginPath();
@@ -1692,7 +1642,7 @@
                 Game.shakeScreen();
                 Game.mineCount--;
                 Game.updateUI();
-                
+
                 // Mine explosion beams: Full Cross
                 const thickness = 40;
                 const beams = [
@@ -1707,10 +1657,10 @@
                 ctx.save(); ctx.translate(this.center.x, this.center.y);
                 const pulse = Math.sin(Date.now()/50) * 0.2 + 1;
                 ctx.scale(pulse, pulse);
-                ctx.fillStyle = '#1f2937'; 
-                ctx.beginPath(); ctx.arc(0, 5, 12, 0, Math.PI*2); ctx.fill(); 
-                ctx.fillStyle = '#ef4444'; 
-                ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill(); 
+                ctx.fillStyle = '#1f2937';
+                ctx.beginPath(); ctx.arc(0, 5, 12, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = 'black'; ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.fillText(Math.ceil(this.timer), 0, 4);
                 ctx.restore();
             }
@@ -1720,10 +1670,10 @@
             constructor(x, y) { this.x = x; this.y = y; this.w = CONFIG.tileSize; this.h = CONFIG.tileSize; this.dead = false; }
             update(dt) {}
             draw(ctx) {
-                ctx.fillStyle = CONFIG.colors.wallSide; 
-                ctx.fillRect(this.x, this.y + 10, this.w, this.h - 10); 
-                ctx.fillStyle = CONFIG.colors.wallTop; 
-                ctx.fillRect(this.x, this.y, this.w, this.h - 10); 
+                ctx.fillStyle = CONFIG.colors.wallSide;
+                ctx.fillRect(this.x, this.y + 10, this.w, this.h - 10);
+                ctx.fillStyle = CONFIG.colors.wallTop;
+                ctx.fillRect(this.x, this.y, this.w, this.h - 10);
                 ctx.fillStyle = 'rgba(255,255,255,0.1)';
                 ctx.fillRect(this.x, this.y, this.w, 2);
             }
@@ -1732,7 +1682,7 @@
         // --- NEW PIPE IMPLEMENTATION WITH CLIPPING & 3D STYLE ---
         class Pipe {
             constructor(segments) {
-                this.segments = segments; 
+                this.segments = segments;
                 this.dirty = true;
                 this.cleanliness = 0; // 0 to 1 (1 = clean)
                 this.lastHitTime = 0;
@@ -1740,7 +1690,7 @@
                 this.dead = false;
                 this.hasValve = Math.random() > 0.5; // Some pipes have valves
                 this.valvePos = this.segments[Math.floor(Math.random() * this.segments.length)];
-                
+
                 let minC = Infinity, maxC = -Infinity, minR = Infinity, maxR = -Infinity;
                 this.segments.forEach(s => {
                     minC = Math.min(minC, s.c);
@@ -1754,7 +1704,7 @@
                     w: (maxC - minC + 1) * CONFIG.tileSize,
                     h: (maxR - minR + 1) * CONFIG.tileSize
                 };
-                this.y = this.boundingBox.y; 
+                this.y = this.boundingBox.y;
                 this.h = this.boundingBox.h;
 
                 this.openings = this.findOpenings();
@@ -1763,7 +1713,7 @@
             findOpenings() {
                 const map = new Map();
                 this.segments.forEach(s => map.set(`${s.c},${s.r}`, s));
-                
+
                 const openings = [];
                 this.segments.forEach(s => {
                     const neighbors = [];
@@ -1776,12 +1726,12 @@
                         const n = neighbors[0];
                         openings.push({
                             rect: {
-                                x: s.c * CONFIG.tileSize, 
-                                y: s.r * CONFIG.tileSize, 
-                                w: CONFIG.tileSize, 
+                                x: s.c * CONFIG.tileSize,
+                                y: s.r * CONFIG.tileSize,
+                                w: CONFIG.tileSize,
                                 h: CONFIG.tileSize
                             },
-                            enterDir: {x: n.dc, y: n.dr}, 
+                            enterDir: {x: n.dc, y: n.dr},
                             cx: (s.c + 0.5) * CONFIG.tileSize,
                             cy: (s.r + 0.5) * CONFIG.tileSize,
                             holeX: (s.c + 0.5 - n.dc*0.4) * CONFIG.tileSize,
@@ -1791,7 +1741,7 @@
                 });
                 return openings;
             }
-            
+
             checkHit(bullet) {
                 for(let op of this.openings) {
                     if(checkCollision(bullet, op.rect)) {
@@ -1799,14 +1749,14 @@
                         if (len === 0) return false;
                         const bvx = bullet.vx / len;
                         const bvy = bullet.vy / len;
-                        
+
                         // 檢查子彈方向是否與管口方向一致（進入管子）
                         if (bvx * op.enterDir.x + bvy * op.enterDir.y > 0.5) {
                             return true;
                         }
                     }
                 }
-                return false; 
+                return false;
             }
 
             clean() {
@@ -1828,7 +1778,7 @@
                         this.cleanliness -= CONFIG.dirtRegrowRate * dt;
                         if(this.cleanliness < 0) this.cleanliness = 0;
                     }
-                    
+
                     if (Math.random() > 0.7) {
                          // Splash effect during cleaning
                          if(this.openings.length > 0) {
@@ -1840,16 +1790,16 @@
             }
 
             finishCleaning() {
-                this.dirty = false; 
-                this.dead = true; 
+                this.dirty = false;
+                this.dead = true;
                 this.segments.forEach(s => { Game.grid[s.r][s.c] = 0; });
                 Game.mineCount++; Game.updateUI();
-                
+
                 const cx = this.boundingBox.x + this.boundingBox.w/2;
                 const cy = this.boundingBox.y + this.boundingBox.h/2;
 
                 Game.addFloatingText(cx, cy, "(dolo團隊-專業洗水管)", "#fff", 'dolo');
-                
+
                 // Beam calculation (向管口外射出光波)
                 const beams = [];
                 const thickness = 40;
@@ -1857,26 +1807,26 @@
                 this.openings.forEach(op => {
                     const dirX = -op.enterDir.x;
                     const dirY = -op.enterDir.y;
-                    
+
                     let bx, by, bw, bh;
-                    
+
                     if (dirX !== 0) {
                         by = op.cy - thickness/2;
                         bh = thickness;
-                        if (dirX > 0) { 
+                        if (dirX > 0) {
                             bx = op.holeX;
                             bw = Game.mapCols * CONFIG.tileSize - bx;
-                        } else { 
+                        } else {
                             bx = 0;
                             bw = op.holeX;
                         }
                     } else {
                         bx = op.cx - thickness/2;
                         bw = thickness;
-                        if (dirY > 0) { 
+                        if (dirY > 0) {
                             by = op.holeY;
                             bh = Game.mapRows * CONFIG.tileSize - by;
-                        } else { 
+                        } else {
                             by = 0;
                             bh = op.holeY;
                         }
@@ -1885,7 +1835,7 @@
                 });
 
                 Game.entities.push(new LightWave(beams));
-                
+
                 this.segments.forEach(s => {
                     const px = s.c * CONFIG.tileSize + CONFIG.tileSize/2;
                     const py = s.r * CONFIG.tileSize + CONFIG.tileSize/2;
@@ -1895,11 +1845,11 @@
 
             draw(ctx) {
                 ctx.save();
-                
+
                 const centerPath = new Path2D();
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                const pipeWidth = 40; 
+                const pipeWidth = 40;
 
                 // 建立管線中心線路徑
                 this.segments.forEach(s1 => {
@@ -1923,9 +1873,9 @@
                 this.segments.forEach(s => {
                     const cx = (s.c + 0.5) * CONFIG.tileSize;
                     const cy = (s.r + 0.5) * CONFIG.tileSize;
-                    ctx.beginPath(); 
-                    ctx.arc(cx, cy, 24, 0, Math.PI*2); 
-                    ctx.fillStyle = CONFIG.colors.pipeShadow; 
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 24, 0, Math.PI*2);
+                    ctx.fillStyle = CONFIG.colors.pipeShadow;
                     ctx.fill();
                 });
 
@@ -1936,9 +1886,9 @@
                 this.segments.forEach(s => {
                     const cx = (s.c + 0.5) * CONFIG.tileSize;
                     const cy = (s.r + 0.5) * CONFIG.tileSize;
-                    ctx.beginPath(); 
-                    ctx.arc(cx, cy, 20, 0, Math.PI*2); 
-                    ctx.fillStyle = CONFIG.colors.pipeBase; 
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 20, 0, Math.PI*2);
+                    ctx.fillStyle = CONFIG.colors.pipeBase;
                     ctx.fill();
                 });
 
@@ -1949,9 +1899,9 @@
                 this.segments.forEach(s => {
                     const cx = (s.c + 0.5) * CONFIG.tileSize;
                     const cy = (s.r + 0.5) * CONFIG.tileSize;
-                    ctx.beginPath(); 
-                    ctx.arc(cx, cy, 12, 0, Math.PI*2); 
-                    ctx.fillStyle = CONFIG.colors.pipeHighlight; 
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 12, 0, Math.PI*2);
+                    ctx.fillStyle = CONFIG.colors.pipeHighlight;
                     ctx.fill();
                 });
 
@@ -1963,9 +1913,9 @@
                 this.segments.forEach(s => {
                     const cx = (s.c + 0.5) * CONFIG.tileSize;
                     const cy = (s.r + 0.5) * CONFIG.tileSize;
-                    ctx.beginPath(); 
-                    ctx.arc(cx, cy, 4, 0, Math.PI*2); 
-                    ctx.fillStyle = CONFIG.colors.pipeSpecular; 
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 4, 0, Math.PI*2);
+                    ctx.fillStyle = CONFIG.colors.pipeSpecular;
                     ctx.fill();
                 });
                 ctx.globalAlpha = 1.0;
@@ -1973,11 +1923,11 @@
                 // 5. 繪製髒污（帶剪裁）
                 if (this.dirty) {
                     let sludgeScale = 1 - this.cleanliness;
-                    
+
                     ctx.save();
                     // 建立內管剪裁路徑
                     const clipPath = new Path2D();
-                    const r = 16; 
+                    const r = 16;
                     this.segments.forEach(s1 => {
                         const cx1 = (s1.c + 0.5) * CONFIG.tileSize;
                         const cy1 = (s1.r + 0.5) * CONFIG.tileSize;
@@ -2000,30 +1950,30 @@
                             }
                         });
                     });
-                    
+
                     ctx.clip(clipPath);
 
                     const wiggle = Math.sin(Date.now() / 200 + this.sludgeOffset) * 2;
-                    
+
                     // 髒污底色
                     ctx.strokeStyle = CONFIG.colors.sludgeBase;
-                    ctx.lineWidth = 32 * sludgeScale; 
+                    ctx.lineWidth = 32 * sludgeScale;
                     ctx.setLineDash([]);
                     ctx.stroke(centerPath);
-                    
+
                     // 髒污細節
                     ctx.strokeStyle = CONFIG.colors.sludgeDetail;
                     ctx.lineWidth = 24 * sludgeScale;
                     ctx.setLineDash([5, 10]);
                     ctx.lineDashOffset = wiggle;
                     ctx.stroke(centerPath);
-                    
+
                     // 清潔時的水流效果
                     if(this.cleanliness > 0) {
-                        ctx.strokeStyle = '#bae6fd'; 
-                        ctx.lineWidth = 20 * this.cleanliness; 
+                        ctx.strokeStyle = '#bae6fd';
+                        ctx.lineWidth = 20 * this.cleanliness;
                         ctx.setLineDash([2, 5]);
-                        ctx.lineDashOffset = -wiggle * 5; 
+                        ctx.lineDashOffset = -wiggle * 5;
                         ctx.stroke(centerPath);
                     }
 
@@ -2041,17 +1991,17 @@
                     ctx.rotate(angle);
 
                     // 繪製亮灰色長方形作為管口
-                    ctx.fillStyle = '#e2e8f0'; 
+                    ctx.fillStyle = '#e2e8f0';
                     ctx.fillRect(-6.5, -22, 13, 44);
 
                     ctx.restore();
                 });
-                
+
                 // 7. 繪製閥門
                 if(this.hasValve) {
                     const vx = (this.valvePos.c + 0.5) * CONFIG.tileSize;
                     const vy = (this.valvePos.r + 0.5) * CONFIG.tileSize;
-                    
+
                     ctx.fillStyle = '#94a3b8';
                     ctx.fillRect(vx-4, vy-10, 8, 10);
                     ctx.fillStyle = '#ef4444';
@@ -2073,8 +2023,8 @@
                 this.x = x; this.y = y; this.type = type; this.life = 1.0;
                 const angle = Math.random() * Math.PI * 2;
                 let speed = Math.random() * 100;
-                
-                if (type === 'blue-explosion') speed = Math.random() * 200 + 50; 
+
+                if (type === 'blue-explosion') speed = Math.random() * 200 + 50;
 
                 this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
                 if (type === 'coin') { this.vy = -50; this.vx = 0; }
@@ -2082,13 +2032,13 @@
             update(dt) { this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt * 1.5; }
             draw(ctx) {
                 ctx.globalAlpha = this.life;
-                if (this.type === 'water') { 
-                    ctx.fillStyle = '#bae6fd'; ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill(); 
+                if (this.type === 'water') {
+                    ctx.fillStyle = '#bae6fd'; ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill();
                 }
-                else if (this.type === 'blue-explosion') { 
-                    ctx.fillStyle = CONFIG.colors.explosionBlue; 
+                else if (this.type === 'blue-explosion') {
+                    ctx.fillStyle = CONFIG.colors.explosionBlue;
                     ctx.beginPath(); ctx.arc(this.x, this.y, 6 * this.life, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = '#ffffff'; 
+                    ctx.fillStyle = '#ffffff';
                     ctx.beginPath(); ctx.arc(this.x, this.y, 3 * this.life, 0, Math.PI*2); ctx.fill();
                 }
                 else if (this.type === 'goo') { ctx.fillStyle = '#a3e635'; ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI*2); ctx.fill(); }
