@@ -842,7 +842,6 @@
                 const scale = containerWidth / virtualWidth;
 
                 // 4. 反推虛擬畫布高度 (讓 Scaler 高度縮放後 = 實際容器高度)
-                // 這樣能確保遊戲畫面填滿容器，不會有黑邊
                 const virtualHeight = containerHeight / scale;
 
                 // 5. 應用設定到 Scaler
@@ -873,15 +872,15 @@
             configureGameSettings() {
                 if (this.isDesktop) {
                     // PC 設定
-                    this.mapCols = 30; // 加寬地圖以適應 1920
-                    this.mapRows = 20;
+                    this.mapCols = 30; // 1920 / 64 = 30
+                    this.mapRows = 20; // 1280 / 64 = 20 (寬屏設計)
                     CONFIG.maxPipeStructures = 10;
                     CONFIG.totalEnemies = 10;
                     CONFIG.enemySpeed = 100; // 追逐速度: 慢
                 } else {
-                    // 手機 設定 (直向)
-                    this.mapCols = 14; 
-                    this.mapRows = 24; 
+                    // 手機 設定 (調整為 16x20 以減少擁擠感)
+                    this.mapCols = 16; 
+                    this.mapRows = 20; 
                     CONFIG.maxPipeStructures = 5; 
                     CONFIG.totalEnemies = 6;      
                     CONFIG.enemySpeed = 80; // 追逐速度: 慢
