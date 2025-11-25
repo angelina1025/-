@@ -23,7 +23,8 @@
             height: 100%;
             overflow: hidden;
             background-color: #0f172a;
-            position: fixed;
+            /* 關鍵：設為相對定位，讓它能適應父容器的大小 */
+            position: relative; 
         }
 
         #game-layer {
@@ -46,11 +47,11 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            /* 安全區域設定 */
+            /* 增加安全區域 padding */
             padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
         }
 
-        /* 狀態面板 - 左上 (預設桌面樣式) */
+        /* 狀態面板 - 左上 */
         .status-panel-left {
             position: absolute;
             top: max(16px, env(safe-area-inset-top));
@@ -101,32 +102,24 @@
         }
         #minimap-canvas { width: 100%; height: 100%; display: block; }
 
-        /* --- 響應式調整 (針對寬度小於等於 1080px 的裝置 - 行動版介面) --- */
-        @media (max-width: 1080px) {
-            /* 1. 左側狀態欄垂直排列 */
-            .status-panel-left {
-                flex-direction: column;
-                gap: 8px;
-                align-items: flex-start;
-            }
-
-            /* 2. 字體與內距微調 */
-            .stat-badge {
-                font-size: 14px;
-                padding: 4px 10px;
-            }
-
-            /* 3. 縮小地圖尺寸 */
-            #minimap-container {
-                width: 100px;
-                height: 100px;
-                border-width: 2px;
-            }
-
-            /* 4. 調整時間位置 */
-            .status-panel-center {
-                top: max(12px, env(safe-area-inset-top));
-            }
+        /* --- JS 動態切換的 class (取代 @media 查詢，由 JS 判斷寬度後添加) --- */
+        /* 手機版樣式 */
+        .mobile-layout .status-panel-left {
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .mobile-layout .stat-badge {
+            font-size: 14px;
+            padding: 4px 10px;
+        }
+        .mobile-layout #minimap-container {
+            width: 100px;
+            height: 100px;
+            border-width: 2px;
+        }
+        .mobile-layout .status-panel-center {
+            top: max(12px, env(safe-area-inset-top));
         }
 
         /* 底部控制器 */
@@ -139,7 +132,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            padding: 0 30px 40px 30px;
+            padding: 0 30px 40px 30px; /* 左右 padding 讓按鈕不貼邊 */
             padding-bottom: max(40px, env(safe-area-inset-bottom));
             pointer-events: auto;
         }
@@ -153,7 +146,7 @@
             position: relative;
             backdrop-filter: blur(4px);
         }
-
+        
         .joystick-knob {
             width: 50px;
             height: 50px;
@@ -184,7 +177,7 @@
             touch-action: none;
             backdrop-filter: blur(4px);
         }
-
+        
         .btn-circle:active { transform: scale(0.92) translateY(4px); filter: brightness(0.9); }
 
         #btn-shoot {
@@ -209,7 +202,7 @@
         }
 
         #pc-controls-hint {
-            display: none;
+            display: none; 
             position: absolute; top: 90px; left: 16px;
             background: rgba(15, 23, 42, 0.9);
             padding: 12px; border-radius: 8px;
@@ -236,7 +229,7 @@
             pointer-events: auto; opacity: 0; transition: opacity 0.3s; pointer-events: none;
         }
         .modal.show { opacity: 1; pointer-events: auto; }
-
+        
         .modal-content {
             background: #f8fafc; width: 85%; max-width: 400px;
             padding: 24px; border-radius: 24px; text-align: center;
@@ -255,7 +248,7 @@
             transition: transform 0.1s;
         }
         .btn-primary:active { transform: translateY(4px); box-shadow: 0 2px 0 #14532d; }
-
+        
         .btn-line {
             background: linear-gradient(to bottom, #06c755, #059b42);
             box-shadow: 0 6px 0 #036b2d;
@@ -304,10 +297,10 @@
             white-space: nowrap;
             z-index: 15;
         }
-
+        
         .end-stats {
             display: flex;
-            flex-direction: column;
+            flex-direction: column; 
             align-items: center;
             gap: 15px;
             margin: 15px 0 25px 0;
@@ -341,7 +334,7 @@
         }
     </style>
 </head>
-<body>
+<body id="game-body">
 
     <canvas id="game-layer"></canvas>
 
@@ -397,7 +390,7 @@
             <div class="text-6xl mb-3">🚰</div>
             <h1 class="text-3xl font-black text-slate-800 mb-2 tracking-tight">戰鬥吧!水教官!!</h1>
             <p class="text-slate-500 mb-6 font-medium">Dolo 團隊專業技術支援</p>
-
+            
             <div class="bg-slate-100 p-5 rounded-2xl text-left text-sm text-slate-700 space-y-3 mb-6 border border-slate-200 shadow-inner">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-lg">🦠</div>
@@ -425,11 +418,11 @@
             <div id="end-icon" class="text-7xl mb-2">🏆</div>
             <h2 id="end-title" class="text-4xl font-black text-slate-800 mb-2">任務完成</h2>
             <p id="end-msg" class="text-slate-600 mb-4 font-bold text-lg">區域已淨化！</p>
-
+            
             <div id="end-stats-container" class="end-stats hidden">
                 <!-- JS 會填入內容 -->
             </div>
-
+            
             <button id="btn-coupon" class="btn-primary btn-line hidden mb-4 text-xl py-4" onclick="openLineCoupon()">
                 🎁 領取 LINE 優惠券
             </button>
@@ -445,7 +438,7 @@
     </div>
 
     <script>
-        const LINE_COUPON_URL = "https://lin.ee/eUHT4zO";
+        const LINE_COUPON_URL = "https://lin.ee/eUHT4zO"; 
         function openLineCoupon() { window.open(LINE_COUPON_URL, '_blank'); }
 
         // --- 儲存戰績卡功能 ---
@@ -458,7 +451,7 @@
             // 1. 背景
             ctx.fillStyle = '#f1f5f9';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+            
             // 頂部裝飾條
             const grad = ctx.createLinearGradient(0, 0, 0, 150);
             grad.addColorStop(0, '#3b82f6');
@@ -488,7 +481,7 @@
                 ctx.shadowOffsetY = 5;
                 ctx.fillRect(100, y, 400, 100);
                 ctx.shadowColor = 'transparent'; // reset
-
+                
                 ctx.fillStyle = '#94a3b8';
                 ctx.font = '20px "Segoe UI", sans-serif';
                 ctx.fillText(label, canvas.width/2, y + 35);
@@ -507,11 +500,11 @@
             // 4. 底部日期與浮水印
             const now = new Date();
             const dateStr = `${now.getFullYear()}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
+            
             ctx.fillStyle = '#94a3b8';
             ctx.font = '18px monospace';
             ctx.fillText(dateStr, canvas.width/2, 650);
-
+            
             ctx.fillStyle = '#cbd5e1';
             ctx.font = 'bold 24px "Segoe UI", sans-serif';
             ctx.fillText('DOLO 專業水管清潔', canvas.width/2, 750);
@@ -526,15 +519,15 @@
         const CONFIG = {
             tileSize: 64,
             playerSpeed: 250,
-            enemySpeed: 180, // Default speed
-            enemyWanderSpeed: 50,
+            enemySpeed: 150, // Default speed reduced
+            enemyWanderSpeed: 50, 
             enemyAggroRange: 300,
             totalEnemies: 10, // Default
             maxPipeStructures: 10, // Default
-            cleanTimePerTile: 0.5,
-            dirtRegrowRate: 0.4,
+            cleanTimePerTile: 0.5, 
+            dirtRegrowRate: 0.4, 
             colors: {
-                bg: '#334155',
+                bg: '#334155', 
                 floorLight: '#475569',
                 floorDark: '#334155',
                 wallTop: '#94a3b8',
@@ -543,14 +536,14 @@
                 water: '#38bdf8',
                 lightwave: '#fef08a',
                 explosionBlue: '#60a5fa',
-                pipeBase: '#3b82f6',
-                pipeShadow: '#1e3a8a',
-                pipeHighlight: '#93c5fd',
-                pipeSpecular: '#ffffff',
-                connector: '#94a3b8',
-                connectorTop: '#cbd5e1',
-                sludgeBase: '#713f12',
-                sludgeDetail: '#a16207'
+                pipeBase: '#3b82f6',       
+                pipeShadow: '#1e3a8a',     
+                pipeHighlight: '#93c5fd',  
+                pipeSpecular: '#ffffff',   
+                connector: '#94a3b8',      
+                connectorTop: '#cbd5e1',   
+                sludgeBase: '#713f12',     
+                sludgeDetail: '#a16207'    
             }
         };
 
@@ -559,44 +552,43 @@
             [{c:0, r:0}, {c:0, r:1}],
             [{c:0, r:0}, {c:1, r:0}, {c:2, r:0}],
             [{c:0, r:0}, {c:0, r:1}, {c:0, r:2}],
-            [{c:0, r:0}, {c:1, r:0}, {c:0, r:1}],
+            [{c:0, r:0}, {c:1, r:0}, {c:0, r:1}], 
             [{c:0, r:0}, {c:1, r:0}, {c:1, r:1}],
             [{c:1, r:1}, {c:0, r:1}, {c:2, r:1}, {c:1, r:0}, {c:1, r:2}],
             [{c:0, r:0}, {c:1, r:0}, {c:2, r:0}, {c:1, r:1}]
         ];
 
         const Input = {
-            mode: 'touch',
+            mode: 'touch', 
             keys: { w: false, a: false, s: false, d: false, space: false, b: false },
             move: { x: 0, y: 0 },
-
+            
             init() {
                 window.addEventListener('keydown', e => this.onKey(e, true));
                 window.addEventListener('keyup', e => this.onKey(e, false));
                 this.initTouchButtons();
                 Joystick.init();
-                // Detect mode initially
-                this.detectMode();
+                // Wait for first resize/layout update to detect mode
             },
 
-            detectMode() {
+            updateModeDisplay(isDesktop) {
                 const hintEl = document.getElementById('dynamic-controls-hint');
                 const controlsArea = document.querySelector('.controls-area');
                 const pcHint = document.getElementById('pc-controls-hint');
-
-                // 使用與 Game 邏輯一致的斷點 (1080px)
-                const isDesktop = window.innerWidth > 1080;
+                const body = document.body;
 
                 if (isDesktop) {
                     this.mode = 'keyboard';
                     if(controlsArea) controlsArea.style.display = 'none';
                     if(pcHint) pcHint.style.display = 'block';
                     if(hintEl) hintEl.innerHTML = `💻 電腦版模式：WASD 移動, 空白鍵射擊`;
+                    body.classList.remove('mobile-layout');
                 } else {
                     this.mode = 'touch';
                     if(controlsArea) controlsArea.style.display = 'flex';
                     if(pcHint) pcHint.style.display = 'none';
                     if(hintEl) hintEl.innerHTML = `📱 手機版模式：使用虛擬搖桿移動`;
+                    body.classList.add('mobile-layout');
                 }
             },
 
@@ -620,13 +612,13 @@
             initTouchButtons() {
                 const btnShoot = document.getElementById('btn-shoot');
                 const btnMine = document.getElementById('btn-mine');
-
+                
                 const startShoot = (e) => {
                     e.preventDefault();
                     if(!Game.running) return;
                     Game.player.shoot();
                     if(!this.shootInterval) {
-                        this.shootInterval = setInterval(() => Game.player.shoot(), 80);
+                        this.shootInterval = setInterval(() => Game.player.shoot(), 80); 
                     }
                     btnShoot.style.transform = 'scale(0.9)';
                 };
@@ -662,7 +654,7 @@
                     if (this.keys.d) this.move.x += 1;
                     if (this.keys.w) this.move.y -= 1;
                     if (this.keys.s) this.move.y += 1;
-
+                    
                     const len = Math.sqrt(this.move.x**2 + this.move.y**2);
                     if(len > 0) {
                         this.move.x /= len;
@@ -684,14 +676,14 @@
         const Joystick = {
             active: false,
             origin: { x: 0, y: 0 },
-            vector: { x: 0, y: 0 },
+            vector: { x: 0, y: 0 }, 
             touchId: null,
-            radius: 60,
-
+            radius: 60, 
+            
             init() {
                 const zone = document.getElementById('joystick-zone');
                 const knob = document.getElementById('joystick-knob');
-
+                
                 const startHandler = (e) => {
                     e.preventDefault();
                     const touch = e.changedTouches ? e.changedTouches[0] : e;
@@ -795,7 +787,7 @@
             running: false,
             lastTime: 0,
             timeElapsed: 0,
-            mapCols: 25,
+            mapCols: 25, 
             mapRows: 25,
             grid: [],
             entities: [],
@@ -803,59 +795,68 @@
             obstacles: [],
             mineCount: 0,
             enemiesKilled: 0,
-            player: null,
+            player: null, 
             lastWin: false,
-            isDesktop: undefined, // Track current mode
-
+            isDesktop: undefined, 
+            
             init() {
-                Input.init();
-                // 初始偵測
-                this.isDesktop = window.innerWidth > 1080;
-                this.configureGameSettings();
-                this.resize();
+                Input.init(); 
+                
+                // 使用 ResizeObserver 監聽 Body 大小變化
+                // 這樣可以讓 Canvas 自動填滿容器（無論容器比例為何）
+                const resizeObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        // 同時傳入寬度和高度
+                        this.handleResize(entry.contentRect.width, entry.contentRect.height);
+                    }
+                });
+                resizeObserver.observe(document.body);
+            },
 
-                window.addEventListener('resize', () => this.resize());
+            handleResize(width, height) {
+                // 判定邏輯： 跟隨網頁的 CSS breakpoint (768px)
+                const newIsDesktop = width > 768;
+
+                canvas.width = width;
+                // 自動高度：使用容器實際高度，這會自動響應您的 padding-top 技巧
+                canvas.height = height; 
+                
+                ctx.imageSmoothingEnabled = false; 
+                minimapCanvas.width = 150;
+                minimapCanvas.height = 150;
+
+                if (this.isDesktop !== newIsDesktop) {
+                    this.isDesktop = newIsDesktop;
+                    this.configureGameSettings();
+                    Input.updateModeDisplay(this.isDesktop);
+                    if (this.running) {
+                        // 如果遊戲正在進行，重啟以適應新地圖尺寸
+                        this.restart(); 
+                    }
+                }
             },
 
             configureGameSettings() {
                 if (this.isDesktop) {
-                    // PC 設定: 正方形大戰場，難度標準
+                    // PC 設定: 橫式大戰場
                     this.mapCols = 25;
                     this.mapRows = 25;
                     CONFIG.maxPipeStructures = 10;
                     CONFIG.totalEnemies = 10;
-                    CONFIG.enemySpeed = 180;
+                    CONFIG.enemySpeed = 150; // Reduced from 180
                 } else {
-                    // 手機 設定: 長方形地圖 (14x24)，難度較簡單
-                    this.mapCols = 14;
-                    this.mapRows = 24;
-                    CONFIG.maxPipeStructures = 5; // 水管少一點
-                    CONFIG.totalEnemies = 6;      // 細菌少一點
-                    CONFIG.enemySpeed = 140;      // 速度慢一點
+                    // 手機 設定: 直式長方形地圖
+                    this.mapCols = 14; 
+                    this.mapRows = 24; 
+                    CONFIG.maxPipeStructures = 5; 
+                    CONFIG.totalEnemies = 6;      
+                    CONFIG.enemySpeed = 110; // Reduced from 140
                 }
                 // 更新目標顯示
                 const goalE = document.getElementById('goal-enemies');
                 const goalP = document.getElementById('goal-pipes');
                 if(goalE) goalE.innerText = CONFIG.totalEnemies;
                 if(goalP) goalP.innerText = CONFIG.maxPipeStructures;
-            },
-
-            resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                ctx.imageSmoothingEnabled = false;
-                minimapCanvas.width = 150;
-                minimapCanvas.height = 150;
-
-                const newIsDesktop = window.innerWidth > 1080;
-
-                // 如果模式改變（例如從直向轉橫向，或拉大視窗），則重新生成遊戲
-                if (this.isDesktop !== undefined && this.isDesktop !== newIsDesktop) {
-                    this.isDesktop = newIsDesktop;
-                    this.configureGameSettings();
-                    this.restart(); // 重新生成地圖以適應新尺寸
-                    Input.detectMode(); // 更新控制介面
-                }
             },
 
             start() {
@@ -885,7 +886,7 @@
 
             generateLevel() {
                 this.grid = [];
-
+                
                 // Init grid
                 for(let r=0; r<this.mapRows; r++) {
                     let row = [];
@@ -894,7 +895,7 @@
                             row.push(1);
                             this.obstacles.push(new Wall(c*CONFIG.tileSize, r*CONFIG.tileSize));
                         } else {
-                            row.push(0);
+                            row.push(0); 
                         }
                     }
                     this.grid.push(row);
@@ -906,11 +907,11 @@
                     attempts++;
                     let r = Math.floor(Math.random() * (this.mapRows - 4)) + 2;
                     let c = Math.floor(Math.random() * (this.mapCols - 4)) + 2;
-
-                    if (r < 6 && c < 6) continue;
+                    
+                    if (r < 6 && c < 6) continue; 
 
                     const shapeTemplate = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-
+                    
                     let canPlace = true;
                     let segments = [];
                     for(let block of shapeTemplate) {
@@ -926,7 +927,7 @@
                     if(canPlace) {
                         const pipe = new Pipe(segments);
                         this.obstacles.push(pipe);
-                        segments.forEach(s => this.grid[s.r][s.c] = 1);
+                        segments.forEach(s => this.grid[s.r][s.c] = 1); 
                         pipesPlaced++;
                     }
                 }
@@ -954,7 +955,7 @@
                 if (!this.running) return;
                 const dt = (now - this.lastTime) / 1000;
                 this.lastTime = now;
-
+                
                 Input.update();
                 this.update(dt);
                 this.draw();
@@ -978,18 +979,18 @@
                 this.obstacles = this.obstacles.filter(o => !o.dead);
 
                 if (this.player.hp <= 0) this.gameOver(false);
-
+                
                 const dirtyPipes = this.obstacles.filter(o => o instanceof Pipe && o.dirty).length;
                 const enemiesLeft = CONFIG.totalEnemies - this.enemiesKilled;
-
+                
                 document.getElementById('obj-text').innerText = `剩餘細菌: ${enemiesLeft} | 髒水管: ${dirtyPipes}`;
                 if (enemiesLeft === 0 && dirtyPipes === 0) this.gameOver(true);
             },
 
             draw() {
                 const bgSize = CONFIG.tileSize;
-
-                ctx.fillStyle = '#1e293b';
+                
+                ctx.fillStyle = '#1e293b'; 
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 ctx.save();
@@ -1018,10 +1019,10 @@
 
                 const lightWaves = this.entities.filter(e => e instanceof LightWave);
                 lightWaves.forEach(w => w.draw(ctx));
-
+                
                 const renderList = [...this.obstacles, ...this.entities.filter(e => !(e instanceof LightWave)), ...this.particles];
                 renderList.sort((a, b) => (a.y + (a.h || 0)) - (b.y + (b.h || 0)));
-
+                
                 renderList.forEach(obj => obj.draw(ctx));
                 ctx.restore();
                 this.drawMinimap();
@@ -1037,12 +1038,12 @@
 
                 this.obstacles.forEach(o => {
                     if (o instanceof Pipe && o.dirty) {
-                        mmCtx.fillStyle = '#facc15';
+                        mmCtx.fillStyle = '#facc15'; 
                         o.segments.forEach(s => {
                             mmCtx.fillRect(s.c * CONFIG.tileSize * scaleX, s.r * CONFIG.tileSize * scaleY, 4, 4);
                         });
                     } else if (o instanceof Wall && !(o instanceof Pipe)) {
-                        mmCtx.fillStyle = '#475569';
+                        mmCtx.fillStyle = '#475569'; 
                         mmCtx.fillRect(o.x * scaleX, o.y * scaleY, 3, 3);
                     }
                 });
@@ -1062,7 +1063,7 @@
                     const px = (this.player.x + this.player.w/2) * scaleX;
                     const py = (this.player.y + this.player.h/2) * scaleY;
                     const angle = Math.atan2(this.player.facing.y, this.player.facing.x);
-
+                    
                     mmCtx.save();
                     mmCtx.translate(px, py);
                     mmCtx.rotate(angle);
@@ -1090,12 +1091,12 @@
                 const el = document.createElement('div');
                 el.className = 'floating-text';
                 if(type === 'dolo') el.classList.add('dolo-text');
-
-                el.style.left = (x - Camera.x) + 'px';
+                
+                el.style.left = (x - Camera.x) + 'px'; 
                 el.style.top = (y - Camera.y) + 'px';
                 el.style.color = color;
                 el.innerText = text;
-                document.getElementById('game-layer').parentNode.appendChild(el);
+                document.getElementById('game-layer').parentNode.appendChild(el); 
                 setTimeout(() => el.remove(), 2000);
             },
 
@@ -1133,10 +1134,10 @@
                     btnCoupon.classList.remove('hidden');
                     btnSave.classList.remove('hidden');
                     statsContainer.classList.remove('hidden');
-
+                    
                     let mins = Math.floor(this.timeElapsed/60).toString().padStart(2,'0');
                     let secs = Math.floor(this.timeElapsed%60).toString().padStart(2,'0');
-
+                    
                     // 獲取當前日期和時間
                     const now = new Date();
                     const dateStr = `${now.getFullYear()}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -1193,16 +1194,16 @@
             update(dt) {
                 this.vx = Input.move.x * this.speed * dt;
                 this.vy = Input.move.y * this.speed * dt;
-
+                
                 if (Math.abs(Input.move.x) > 0.1 || Math.abs(Input.move.y) > 0.1) {
                     this.facing = { ...Input.move };
                 }
 
                 if (!this.isValidMove(this.x + this.vx, this.y)) this.vx = 0;
                 if (!this.isValidMove(this.x, this.y + this.vy)) this.vy = 0;
-
+                
                 super.update(dt);
-
+                
                 const maxX = Game.mapCols * CONFIG.tileSize - this.w;
                 const maxY = Game.mapRows * CONFIG.tileSize - this.h;
                 if (this.x < 0) this.x = 0;
@@ -1228,10 +1229,10 @@
             }
             shoot() {
                 const now = Date.now();
-                if (now - this.lastShot > 80) {
+                if (now - this.lastShot > 80) { 
                     this.lastShot = now;
                     let mag = Math.sqrt(this.facing.x**2 + this.facing.y**2);
-                    if (mag === 0) mag = 1;
+                    if (mag === 0) mag = 1; 
                     Game.entities.push(new Bullet(this.center.x, this.center.y, (this.facing.x/mag), (this.facing.y/mag)));
                 }
             }
@@ -1266,31 +1267,31 @@
                 // 3D Character Drawing
                 const legGrad = ctx.createLinearGradient(-8, 0, 2, 0);
                 legGrad.addColorStop(0, '#172554'); legGrad.addColorStop(0.5, '#1e40af'); legGrad.addColorStop(1, '#172554');
-                ctx.fillStyle = legGrad;
-                ctx.fillRect(-8, 10, 6, 12);
-
+                ctx.fillStyle = legGrad; 
+                ctx.fillRect(-8, 10, 6, 12); 
+                
                 const rightLegGrad = ctx.createLinearGradient(2, 0, 12, 0);
                 rightLegGrad.addColorStop(0, '#172554'); rightLegGrad.addColorStop(0.5, '#1e40af'); rightLegGrad.addColorStop(1, '#172554');
                 ctx.fillStyle = rightLegGrad;
-                ctx.fillRect(2, 10, 6, 12);
+                ctx.fillRect(2, 10, 6, 12); 
 
                 const bodyGrad = ctx.createLinearGradient(-10, 0, 10, 0);
                 bodyGrad.addColorStop(0, '#14532d'); bodyGrad.addColorStop(0.5, '#16a34a'); bodyGrad.addColorStop(1, '#14532d');
                 ctx.fillStyle = bodyGrad;
-                ctx.fillRect(-10, -5, 20, 18);
+                ctx.fillRect(-10, -5, 20, 18); 
                 ctx.fillRect(-14, -5, 4, 8); ctx.fillRect(10, -5, 4, 8);
 
                 const headGrad = ctx.createLinearGradient(-9, 0, 9, 0);
                 headGrad.addColorStop(0, '#fcd34d'); headGrad.addColorStop(0.5, '#fde68a'); headGrad.addColorStop(1, '#fcd34d');
                 ctx.fillStyle = headGrad;
-                ctx.fillRect(-9, -22, 18, 18);
+                ctx.fillRect(-9, -22, 18, 18); 
 
                 ctx.fillStyle = '#0f172a';
-                ctx.fillRect(-8, -16, 6, 4); ctx.fillRect(2, -16, 6, 4); ctx.fillRect(-2, -15, 4, 1);
+                ctx.fillRect(-8, -16, 6, 4); ctx.fillRect(2, -16, 6, 4); ctx.fillRect(-2, -15, 4, 1); 
                 ctx.fillStyle = '#bfdbfe'; ctx.fillRect(-7, -15, 4, 2); ctx.fillRect(3, -15, 4, 2);
 
                 ctx.fillStyle = '#020617';
-                ctx.fillRect(-10, -25, 20, 6); ctx.fillRect(-10, -25, 4, 15);
+                ctx.fillRect(-10, -25, 20, 6); ctx.fillRect(-10, -25, 4, 15); 
 
                 ctx.restore();
             }
@@ -1301,11 +1302,11 @@
                 super(x, y, 40, 40);
                 this.maxSpeed = CONFIG.enemySpeed;
                 this.wanderSpeed = CONFIG.enemyWanderSpeed;
-                this.hp = 6;
+                this.hp = 6; 
                 this.type = 'enemy';
                 this.wanderTimer = 0;
                 this.wanderDir = {x: 0, y: 0};
-                this.state = 'wander';
+                this.state = 'wander'; 
                 this.animOffset = Math.random() * 100;
             }
             update(dt) {
@@ -1324,7 +1325,7 @@
                 } else {
                     this.wanderTimer -= dt;
                     if (this.wanderTimer <= 0) {
-                        this.wanderTimer = 2 + Math.random() * 2;
+                        this.wanderTimer = 2 + Math.random() * 2; 
                         const angle = Math.random() * Math.PI * 2;
                         this.wanderDir = { x: Math.cos(angle) * this.wanderSpeed * dt, y: Math.sin(angle) * this.wanderSpeed * dt };
                     }
@@ -1342,7 +1343,7 @@
                 const nextX = this.x + this.vx;
                 const nextY = this.y + this.vy;
                 if(this.isValidPos(nextX, this.y)) this.x = nextX;
-                else if (this.state === 'wander') this.wanderTimer = 0;
+                else if (this.state === 'wander') this.wanderTimer = 0; 
                 if(this.isValidPos(this.x, nextY)) this.y = nextY;
                 else if (this.state === 'wander') this.wanderTimer = 0;
                 if (this.checkCollision(p)) p.takeDamage(1);
@@ -1364,24 +1365,24 @@
             draw(ctx) {
                 ctx.save();
                 ctx.translate(this.center.x, this.center.y);
-
+                
                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
                 ctx.beginPath(); ctx.ellipse(0, 10, 12, 6, 0, 0, Math.PI*2); ctx.fill();
 
                 const bounce = Math.sin(Date.now() / 150 + this.animOffset) * 0.1;
                 ctx.scale(1 - bounce, 1 + bounce);
-
+                
                 // 邏輯修改：攻擊狀態變紅色
                 const isChasing = this.state === 'chase';
                 ctx.fillStyle = isChasing ? '#ef4444' : '#8b5cf6'; // 攻擊紅 / 平時紫
 
-                ctx.beginPath();
+                ctx.beginPath(); 
                 ctx.moveTo(-15, 10);
                 ctx.quadraticCurveTo(-15, -15, 0, -15);
                 ctx.quadraticCurveTo(15, -15, 15, 10);
                 ctx.lineTo(-15, 10);
                 ctx.fill();
-
+                
                 ctx.fillStyle = 'rgba(255,255,255,0.2)';
                 ctx.beginPath(); ctx.ellipse(-6, -6, 4, 2, -0.5, 0, Math.PI*2); ctx.fill();
 
@@ -1398,17 +1399,17 @@
                     ctx.beginPath(); ctx.arc(6, -2, 1, 0, Math.PI*2); ctx.fill();
                 }
                 ctx.restore();
-
+                
                 ctx.fillStyle = 'red'; ctx.fillRect(this.x, this.y - 15, this.w, 4);
                 ctx.fillStyle = '#22c55e'; ctx.fillRect(this.x, this.y - 15, this.w * (this.hp/6), 4);
             }
         }
 
         class LightWave extends Entity {
-            constructor(beams) {
-                super(0, 0, 0, 0);
+            constructor(beams) { 
+                super(0, 0, 0, 0); 
                 this.beams = beams;
-                this.lifespan = 0.5;
+                this.lifespan = 0.5; 
             }
             update(dt) {
                 this.lifespan -= dt;
@@ -1416,7 +1417,7 @@
                 Game.entities.forEach(e => {
                     if (e.type === 'enemy') {
                         if (this.checkHit(e)) {
-                            e.takeDamage(10);
+                            e.takeDamage(10); 
                             Game.particles.push(new Particle(e.center.x, e.center.y, 'explosion'));
                         }
                     }
@@ -1430,10 +1431,10 @@
             }
             draw(ctx) {
                 ctx.save();
-                ctx.globalAlpha = this.lifespan * 2;
+                ctx.globalAlpha = this.lifespan * 2; 
                 ctx.fillStyle = CONFIG.colors.lightwave;
                 ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 20;
-
+                
                 this.beams.forEach(beam => {
                     ctx.fillRect(beam.x, beam.y, beam.w, beam.h);
                 });
@@ -1441,7 +1442,7 @@
                 ctx.shadowBlur = 0;
                 ctx.fillStyle = '#fff';
                 ctx.globalAlpha = this.lifespan;
-
+                
                 this.beams.forEach(beam => {
                     // Draw thinner inner beam
                     let ix = beam.x, iy = beam.y, iw = beam.w, ih = beam.h;
@@ -1460,12 +1461,12 @@
             constructor(x, y, dx, dy) {
                 super(x, y, 10, 10);
                 this.vx = dx * 500; this.vy = dy * 500;
-                this.life = 0.4; // Reduced range
+                this.life = 0.6; // Increased range
             }
             update(dt) {
                 this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
                 if (this.life <= 0) this.dead = true;
-
+                
                 let pipeHit = false;
                 for(const obj of Game.obstacles) {
                     if(obj instanceof Pipe) {
@@ -1474,7 +1475,7 @@
                             pipeHit = true;
                             this.dead = true;
                             break;
-                        } else if (checkCollision(this, obj.boundingBox)) {
+                        } else if (checkCollision(this, obj.boundingBox)) { 
                              this.dead = true;
                              Game.particles.push(new Particle(this.x, this.y, 'water'));
                              break;
@@ -1502,14 +1503,14 @@
                 const angle = Math.atan2(this.vy, this.vx);
                 ctx.rotate(angle);
                 const grad = ctx.createLinearGradient(-20, 0, 10, 0);
-                grad.addColorStop(0, 'rgba(59, 130, 246, 0)');
-                grad.addColorStop(0.5, 'rgba(59, 130, 246, 0.8)');
-                grad.addColorStop(1, 'rgba(255, 255, 255, 1)');
+                grad.addColorStop(0, 'rgba(59, 130, 246, 0)');   
+                grad.addColorStop(0.5, 'rgba(59, 130, 246, 0.8)'); 
+                grad.addColorStop(1, 'rgba(255, 255, 255, 1)');   
                 ctx.fillStyle = grad;
                 ctx.beginPath();
-                ctx.moveTo(10, 0);
-                ctx.quadraticCurveTo(0, 6, -25, 0);
-                ctx.quadraticCurveTo(0, -6, 10, 0);
+                ctx.moveTo(10, 0); 
+                ctx.quadraticCurveTo(0, 6, -25, 0); 
+                ctx.quadraticCurveTo(0, -6, 10, 0); 
                 ctx.fill();
                 ctx.fillStyle = 'rgba(191, 219, 254, 0.6)';
                 ctx.beginPath();
@@ -1528,7 +1529,7 @@
                 Game.shakeScreen();
                 Game.mineCount--;
                 Game.updateUI();
-
+                
                 // Mine explosion beams: Full Cross
                 const thickness = 40;
                 const beams = [
@@ -1543,10 +1544,10 @@
                 ctx.save(); ctx.translate(this.center.x, this.center.y);
                 const pulse = Math.sin(Date.now()/50) * 0.2 + 1;
                 ctx.scale(pulse, pulse);
-                ctx.fillStyle = '#1f2937';
-                ctx.beginPath(); ctx.arc(0, 5, 12, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#ef4444';
-                ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#1f2937'; 
+                ctx.beginPath(); ctx.arc(0, 5, 12, 0, Math.PI*2); ctx.fill(); 
+                ctx.fillStyle = '#ef4444'; 
+                ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill(); 
                 ctx.fillStyle = 'black'; ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.fillText(Math.ceil(this.timer), 0, 4);
                 ctx.restore();
             }
@@ -1556,10 +1557,10 @@
             constructor(x, y) { this.x = x; this.y = y; this.w = CONFIG.tileSize; this.h = CONFIG.tileSize; this.dead = false; }
             update(dt) {}
             draw(ctx) {
-                ctx.fillStyle = CONFIG.colors.wallSide;
-                ctx.fillRect(this.x, this.y + 10, this.w, this.h - 10);
-                ctx.fillStyle = CONFIG.colors.wallTop;
-                ctx.fillRect(this.x, this.y, this.w, this.h - 10);
+                ctx.fillStyle = CONFIG.colors.wallSide; 
+                ctx.fillRect(this.x, this.y + 10, this.w, this.h - 10); 
+                ctx.fillStyle = CONFIG.colors.wallTop; 
+                ctx.fillRect(this.x, this.y, this.w, this.h - 10); 
                 ctx.fillStyle = 'rgba(255,255,255,0.1)';
                 ctx.fillRect(this.x, this.y, this.w, 2);
             }
@@ -1568,7 +1569,7 @@
         // --- NEW PIPE IMPLEMENTATION WITH CLIPPING & 3D STYLE ---
         class Pipe {
             constructor(segments) {
-                this.segments = segments;
+                this.segments = segments; 
                 this.dirty = true;
                 this.cleanliness = 0; // 0 to 1 (1 = clean)
                 this.lastHitTime = 0;
@@ -1576,7 +1577,7 @@
                 this.dead = false;
                 this.hasValve = Math.random() > 0.5; // Some pipes have valves
                 this.valvePos = this.segments[Math.floor(Math.random() * this.segments.length)];
-
+                
                 let minC = Infinity, maxC = -Infinity, minR = Infinity, maxR = -Infinity;
                 this.segments.forEach(s => {
                     minC = Math.min(minC, s.c);
@@ -1590,7 +1591,7 @@
                     w: (maxC - minC + 1) * CONFIG.tileSize,
                     h: (maxR - minR + 1) * CONFIG.tileSize
                 };
-                this.y = this.boundingBox.y;
+                this.y = this.boundingBox.y; 
                 this.h = this.boundingBox.h;
 
                 this.openings = this.findOpenings();
@@ -1599,7 +1600,7 @@
             findOpenings() {
                 const map = new Map();
                 this.segments.forEach(s => map.set(`${s.c},${s.r}`, s));
-
+                
                 const openings = [];
                 this.segments.forEach(s => {
                     const neighbors = [];
@@ -1612,12 +1613,12 @@
                         const n = neighbors[0];
                         openings.push({
                             rect: {
-                                x: s.c * CONFIG.tileSize,
-                                y: s.r * CONFIG.tileSize,
-                                w: CONFIG.tileSize,
+                                x: s.c * CONFIG.tileSize, 
+                                y: s.r * CONFIG.tileSize, 
+                                w: CONFIG.tileSize, 
                                 h: CONFIG.tileSize
                             },
-                            enterDir: {x: n.dc, y: n.dr},
+                            enterDir: {x: n.dc, y: n.dr}, 
                             cx: (s.c + 0.5) * CONFIG.tileSize,
                             cy: (s.r + 0.5) * CONFIG.tileSize,
                             holeX: (s.c + 0.5 - n.dc*0.4) * CONFIG.tileSize,
@@ -1627,7 +1628,7 @@
                 });
                 return openings;
             }
-
+            
             checkHit(bullet) {
                 for(let op of this.openings) {
                     if(checkCollision(bullet, op.rect)) {
@@ -1635,13 +1636,13 @@
                         if (len === 0) return false;
                         const bvx = bullet.vx / len;
                         const bvy = bullet.vy / len;
-
+                        
                         if (bvx * op.enterDir.x + bvy * op.enterDir.y > 0.5) {
                             return true;
                         }
                     }
                 }
-                return false;
+                return false; 
             }
 
             clean() {
@@ -1663,7 +1664,7 @@
                         this.cleanliness -= CONFIG.dirtRegrowRate * dt;
                         if(this.cleanliness < 0) this.cleanliness = 0;
                     }
-
+                    
                     if (Math.random() > 0.7) {
                          // Splash effect during cleaning
                          if(this.openings.length > 0) {
@@ -1675,16 +1676,16 @@
             }
 
             finishCleaning() {
-                this.dirty = false;
-                this.dead = true;
+                this.dirty = false; 
+                this.dead = true; 
                 this.segments.forEach(s => { Game.grid[s.r][s.c] = 0; });
                 Game.mineCount++; Game.updateUI();
-
+                
                 const cx = this.boundingBox.x + this.boundingBox.w/2;
                 const cy = this.boundingBox.y + this.boundingBox.h/2;
 
                 Game.addFloatingText(cx, cy, "(dolo團隊-專業洗水管)", "#fff", 'dolo');
-
+                
                 // Beam calculation
                 const beams = [];
                 const thickness = 40;
@@ -1692,26 +1693,26 @@
                 this.openings.forEach(op => {
                     const dirX = -op.enterDir.x;
                     const dirY = -op.enterDir.y;
-
+                    
                     let bx, by, bw, bh;
-
+                    
                     if (dirX !== 0) {
                         by = op.cy - thickness/2;
                         bh = thickness;
-                        if (dirX > 0) {
+                        if (dirX > 0) { 
                             bx = op.holeX;
                             bw = Game.mapCols * CONFIG.tileSize - bx;
-                        } else {
+                        } else { 
                             bx = 0;
                             bw = op.holeX;
                         }
                     } else {
                         bx = op.cx - thickness/2;
                         bw = thickness;
-                        if (dirY > 0) {
+                        if (dirY > 0) { 
                             by = op.holeY;
                             bh = Game.mapRows * CONFIG.tileSize - by;
-                        } else {
+                        } else { 
                             by = 0;
                             bh = op.holeY;
                         }
@@ -1720,7 +1721,7 @@
                 });
 
                 Game.entities.push(new LightWave(beams));
-
+                
                 this.segments.forEach(s => {
                     const px = s.c * CONFIG.tileSize + CONFIG.tileSize/2;
                     const py = s.r * CONFIG.tileSize + CONFIG.tileSize/2;
@@ -1730,11 +1731,11 @@
 
             draw(ctx) {
                 ctx.save();
-
+                
                 const pipePath = new Path2D();
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                const pipeWidth = 40;
+                const pipeWidth = 40; 
 
                 // 1. 建立管線主幹路徑 (3D管身)
                 this.segments.forEach(s1 => {
@@ -1763,7 +1764,7 @@
 
                 // 陰影層
                 ctx.lineWidth = 44;
-                ctx.strokeStyle = CONFIG.colors.pipeShadow;
+                ctx.strokeStyle = CONFIG.colors.pipeShadow; 
                 ctx.fillStyle = CONFIG.colors.pipeShadow;
                 ctx.fill(pipePath);
 
@@ -1790,9 +1791,9 @@
                 this.segments.forEach(s => {
                     const cx = (s.c + 0.5) * CONFIG.tileSize;
                     const cy = (s.r + 0.5) * CONFIG.tileSize;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, 24, 0, Math.PI*2);
-                    ctx.fillStyle = CONFIG.colors.pipeShadow;
+                    ctx.beginPath(); 
+                    ctx.arc(cx, cy, 24, 0, Math.PI*2); 
+                    ctx.fillStyle = CONFIG.colors.pipeShadow; 
                     ctx.fill();
                 });
 
@@ -1803,9 +1804,9 @@
                 this.segments.forEach(s => {
                     const cx = (s.c + 0.5) * CONFIG.tileSize;
                     const cy = (s.r + 0.5) * CONFIG.tileSize;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, 20, 0, Math.PI*2);
-                    ctx.fillStyle = CONFIG.colors.pipeBase;
+                    ctx.beginPath(); 
+                    ctx.arc(cx, cy, 20, 0, Math.PI*2); 
+                    ctx.fillStyle = CONFIG.colors.pipeBase; 
                     ctx.fill();
                 });
 
@@ -1816,9 +1817,9 @@
                 this.segments.forEach(s => {
                     const cx = (s.c + 0.5) * CONFIG.tileSize;
                     const cy = (s.r + 0.5) * CONFIG.tileSize;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, 12, 0, Math.PI*2);
-                    ctx.fillStyle = CONFIG.colors.pipeHighlight;
+                    ctx.beginPath(); 
+                    ctx.arc(cx, cy, 12, 0, Math.PI*2); 
+                    ctx.fillStyle = CONFIG.colors.pipeHighlight; 
                     ctx.fill();
                 });
 
@@ -1830,9 +1831,9 @@
                 this.segments.forEach(s => {
                     const cx = (s.c + 0.5) * CONFIG.tileSize;
                     const cy = (s.r + 0.5) * CONFIG.tileSize;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, 4, 0, Math.PI*2);
-                    ctx.fillStyle = CONFIG.colors.pipeSpecular;
+                    ctx.beginPath(); 
+                    ctx.arc(cx, cy, 4, 0, Math.PI*2); 
+                    ctx.fillStyle = CONFIG.colors.pipeSpecular; 
                     ctx.fill();
                 });
                 ctx.globalAlpha = 1.0;
@@ -1840,10 +1841,10 @@
                 // 2. 管內髒污（依清潔度縮減）
                 if (this.dirty) {
                     let sludgeScale = 1 - this.cleanliness;
-
+                    
                     ctx.save();
                     const clipPath = new Path2D();
-                    const r = 16;
+                    const r = 16; 
                     this.segments.forEach(s1 => {
                         const cx1 = (s1.c + 0.5) * CONFIG.tileSize;
                         const cy1 = (s1.r + 0.5) * CONFIG.tileSize;
@@ -1866,26 +1867,26 @@
                             }
                         });
                     });
-
+                    
                     ctx.clip(clipPath);
 
                     const wiggle = Math.sin(Date.now() / 200 + this.sludgeOffset) * 2;
-
+                    
                     ctx.strokeStyle = CONFIG.colors.sludgeBase;
-                    ctx.lineWidth = 32 * sludgeScale;
+                    ctx.lineWidth = 32 * sludgeScale; 
                     ctx.stroke(centerPath);
-
+                    
                     ctx.strokeStyle = CONFIG.colors.sludgeDetail;
                     ctx.lineWidth = 24 * sludgeScale;
                     ctx.setLineDash([5, 10]);
                     ctx.lineDashOffset = wiggle;
                     ctx.stroke(centerPath);
-
+                    
                     if(this.cleanliness > 0) {
-                        ctx.strokeStyle = '#bae6fd';
-                        ctx.lineWidth = 20 * this.cleanliness;
+                        ctx.strokeStyle = '#bae6fd'; 
+                        ctx.lineWidth = 20 * this.cleanliness; 
                         ctx.setLineDash([2, 5]);
-                        ctx.lineDashOffset = -wiggle * 5;
+                        ctx.lineDashOffset = -wiggle * 5; 
                         ctx.stroke(centerPath);
                     }
 
@@ -1907,19 +1908,19 @@
                     // 比例 5:1 (相對於格子64px -> 寬約13px)
                     // 長度設為 44px (略大於管徑 40px)，厚度 13px
                     ctx.fillStyle = '#e2e8f0'; // 亮灰色
-
+                    
                     // 繪製置中的長方形
                     // x從 -6.5 到 6.5 (厚度13), y從 -22 到 22 (長度44)
                     ctx.fillRect(-6.5, -22, 13, 44);
 
                     ctx.restore();
                 });
-
+                
                 // 4. 閥門
                 if(this.hasValve) {
                     const vx = (this.valvePos.c + 0.5) * CONFIG.tileSize;
                     const vy = (this.valvePos.r + 0.5) * CONFIG.tileSize;
-
+                    
                     ctx.fillStyle = '#94a3b8';
                     ctx.fillRect(vx-4, vy-10, 8, 10);
                     ctx.fillStyle = '#ef4444';
@@ -1941,8 +1942,8 @@
                 this.x = x; this.y = y; this.type = type; this.life = 1.0;
                 const angle = Math.random() * Math.PI * 2;
                 let speed = Math.random() * 100;
-
-                if (type === 'blue-explosion') speed = Math.random() * 200 + 50;
+                
+                if (type === 'blue-explosion') speed = Math.random() * 200 + 50; 
 
                 this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
                 if (type === 'coin') { this.vy = -50; this.vx = 0; }
@@ -1950,13 +1951,13 @@
             update(dt) { this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt * 1.5; }
             draw(ctx) {
                 ctx.globalAlpha = this.life;
-                if (this.type === 'water') {
-                    ctx.fillStyle = '#bae6fd'; ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill();
+                if (this.type === 'water') { 
+                    ctx.fillStyle = '#bae6fd'; ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill(); 
                 }
-                else if (this.type === 'blue-explosion') {
-                    ctx.fillStyle = CONFIG.colors.explosionBlue;
+                else if (this.type === 'blue-explosion') { 
+                    ctx.fillStyle = CONFIG.colors.explosionBlue; 
                     ctx.beginPath(); ctx.arc(this.x, this.y, 6 * this.life, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = '#ffffff';
+                    ctx.fillStyle = '#ffffff'; 
                     ctx.beginPath(); ctx.arc(this.x, this.y, 3 * this.life, 0, Math.PI*2); ctx.fill();
                 }
                 else if (this.type === 'goo') { ctx.fillStyle = '#a3e635'; ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI*2); ctx.fill(); }
