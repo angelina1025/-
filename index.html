@@ -104,13 +104,13 @@
         .stat-badge {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
-            padding: 8px 20px;
+            padding: 10px 24px; /* 稍微加大內距 */
             display: flex;
             align-items: center;
             gap: 10px;
             font-weight: 800;
             box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-            font-size: 20px;
+            font-size: 24px; /* 加大字體 */
             border: 3px solid #cbd5e1;
             transform: skewX(-5deg);
             pointer-events: auto;
@@ -123,24 +123,24 @@
             box-shadow: 0 2px 0 rgba(0,0,0,0.2);
         }
 
-        /* 底部控制器 */
+        /* 底部控制器 - 調整內距以適應大按鈕 */
         .controls-area {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 300px;
+            height: 320px; /* 稍微增高區域 */
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            padding: 0 40px 60px 40px;
-            pointer-events: auto; /* 必須設為 auto 才能接收觸摸事件 */
+            padding: 0 40px 50px 40px;
+            pointer-events: none; /* 改為 none，讓點擊穿透到背景 */
         }
 
-        /* 搖桿樣式 (確保 touch-action: none 應用在可拖曳元素上) */
+        /* 搖桿樣式 - 放大 */
         .joystick-base {
-            width: 180px;
-            height: 180px;
+            width: 220px; /* 180 -> 220 */
+            height: 220px;
             background: rgba(255, 255, 255, 0.05);
             border: 3px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
@@ -148,11 +148,12 @@
             backdrop-filter: blur(4px);
             /* 搖桿區域允許觸摸，但禁用瀏覽器手勢 */
             touch-action: none; 
+            pointer-events: auto; /* 恢復搖桿互動 */
         }
         
         .joystick-knob {
-            width: 70px;
-            height: 70px;
+            width: 90px; /* 70 -> 90 */
+            height: 90px;
             background: linear-gradient(135deg, #3b82f6, #1d4ed8);
             border-radius: 50%;
             position: absolute;
@@ -165,7 +166,12 @@
         }
         .joystick-knob.active { transition: none; }
 
-        .actions-cluster { display: flex; gap: 30px; align-items: flex-end; }
+        .actions-cluster { 
+            display: flex; 
+            gap: 30px; 
+            align-items: flex-end; 
+            pointer-events: auto; /* 恢復按鈕互動 */
+        }
 
         .btn-circle {
             border-radius: 50%;
@@ -185,12 +191,13 @@
         .btn-circle:active { transform: scale(0.92) translateY(4px); filter: brightness(0.9); }
 
         #btn-shoot {
-            width: 110px; height: 110px;
+            width: 140px; height: 140px; /* 110 -> 140 */
+            font-size: 48px; /* 字體放大 */
             background: linear-gradient(135deg, #0ea5e9, #0284c7);
         }
 
         #btn-mine {
-            width: 80px; height: 80px;
+            width: 100px; height: 100px; /* 80 -> 100 */
             background: linear-gradient(135deg, #ef4444, #b91c1c);
             margin-bottom: 30px;
         }
@@ -198,8 +205,8 @@
         .badge-count {
             position: absolute; top: -5px; right: -5px;
             background: #f59e0b; color: #fff;
-            font-size: 16px; font-weight: bold;
-            width: 32px; height: 32px;
+            font-size: 20px; font-weight: bold;
+            width: 36px; height: 36px;
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             border: 3px solid white;
@@ -338,9 +345,38 @@
             padding: 6px 16px;
             border-radius: 20px;
         }
+
+        /* 旋轉提示層 */
+        #rotate-hint {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        #rotate-hint .icon { font-size: 60px; margin-bottom: 20px; animation: rotate-icon 2s infinite ease-in-out; }
+        @keyframes rotate-icon {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-90deg); }
+            50% { transform: rotate(-90deg); }
+            75% { transform: rotate(0deg); }
+            100% { transform: rotate(0deg); }
+        }
     </style>
 </head>
 <body>
+
+    <!-- 旋轉手機提示 -->
+    <div id="rotate-hint">
+        <div class="icon">📱</div>
+        <h2 class="text-2xl font-bold mb-2">請旋轉手機</h2>
+        <p class="text-slate-300">獲得最佳遊戲體驗 (橫向操作)</p>
+    </div>
 
     <!-- 新增外層容器：Game Container (100% 視窗大小) -->
     <div id="game-container">
@@ -484,11 +520,19 @@
             if (!document.fullscreenElement) {
                 try {
                     await document.documentElement.requestFullscreen();
-                    // 嘗試鎖定橫向 (支援的手機瀏覽器會生效)
-                    if (screen.orientation && screen.orientation.lock) {
-                        await screen.orientation.lock('landscape').catch(err => {
-                            console.log('Orientation lock failed (usually requires user gesture or standalone mode):', err);
-                        });
+                    // 嘗試鎖定橫向
+                    try {
+                        if (screen.orientation && screen.orientation.lock) {
+                            await screen.orientation.lock('landscape');
+                        } else if (screen.lockOrientation) {
+                            screen.lockOrientation('landscape');
+                        } else if (screen.mozLockOrientation) {
+                            screen.mozLockOrientation('landscape');
+                        } else if (screen.msLockOrientation) {
+                            screen.msLockOrientation('landscape');
+                        }
+                    } catch(e) {
+                        console.log("Orientation lock failed, fallback to manual rotation.");
                     }
                 } catch (err) {
                     console.log('Error attempting to enable full-screen mode:', err);
@@ -752,7 +796,7 @@
             origin: { x: 0, y: 0 },
             vector: { x: 0, y: 0 }, 
             touchId: null,
-            radius: 90, 
+            radius: 110, /* 增加可拖曳半徑以配合變大的搖桿 */
             
             init() {
                 const zone = document.getElementById('joystick-zone');
@@ -888,8 +932,17 @@
             },
 
             handleResize(containerWidth, containerHeight) {
-                // 1. 判定模式 (跟隨網頁 CSS 斷點: 768px)
-                const newIsDesktop = containerWidth > 768;
+                // 1. 判定模式 (修正為：只要支援觸控，就視為手機模式，避免寬度判斷錯誤)
+                const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                const newIsDesktop = !isTouch && (containerWidth > 768);
+
+                // 檢查是否需要旋轉提示 (如果是觸控裝置且處於直式)
+                const rotateHint = document.getElementById('rotate-hint');
+                if (isTouch && containerHeight > containerWidth) {
+                    if(rotateHint) rotateHint.style.display = 'flex';
+                } else {
+                    if(rotateHint) rotateHint.style.display = 'none';
+                }
 
                 // --- START 動態地圖格子計算 ---
                 const tileSize = CONFIG.tileSize; // 80px
@@ -1285,7 +1338,7 @@
 
         class Player extends Entity {
             constructor(x, y) {
-                super(x, y, 40, 40);
+                super(x, y, 60, 60); // 玩家尺寸放大：60x60
                 this.hp = 5;
                 this.speed = CONFIG.playerSpeed;
                 this.lastShot = 0;
@@ -1363,8 +1416,11 @@
                 ctx.beginPath(); ctx.ellipse(0, 15, 12, 5, 0, 0, Math.PI*2); ctx.fill();
 
                 if (this.invincible > 0 && Math.floor(Date.now()/100)%2) ctx.globalAlpha = 0.5;
-                // 根據面對方向翻轉角色
-                if (this.facing.x < 0) ctx.scale(-1, 1);
+                
+                // 縮放角色繪製（1.5倍放大）
+                const scaleFactor = 1.5;
+                const dir = this.facing.x < 0 ? -1 : 1;
+                ctx.scale(scaleFactor * dir, scaleFactor);
 
                 // 3D Character Drawing
                 const legGrad = ctx.createLinearGradient(-8, 0, 2, 0);
