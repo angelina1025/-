@@ -2,18 +2,20 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <!-- 確保視窗完全填滿且禁用縮放，符合手遊體驗 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>戰鬥吧!水教官!!</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* * 手機遊戲核心 CSS */
+        /* --- 核心響應式 CSS 結構 --- */
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            touch-action: none;
+            /* 讓 UI 上的按鈕能響應，但遊戲區域的 Canvas 應該允許觸摸移動 */
+            touch-action: manipulation;
             user-select: none;
             -webkit-user-select: none;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-family: 'Inter', 'Segoe UI', 'Microsoft JhengHei', sans-serif;
         }
 
         body, html {
@@ -21,11 +23,12 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            /* 關鍵：防止內容溢出導致的滾動條 */
+            overflow: hidden; 
             background-color: #0f172a;
         }
 
-        /* 最外層容器：負責填滿 iframe 或視窗 */
+        /* 最外層容器：負責填滿 iframe 或視窗，並作為縮放層的參考點 */
         #game-container {
             width: 100%;
             height: 100%;
@@ -36,15 +39,14 @@
             position: relative;
         }
 
-        /* 縮放層：遊戲實際內容都在這，會被 transform: scale(...) 控制 */
+        /* 縮放層：這就是被 JS 縮放和居中的「虛擬畫布」 */
         #game-scaler {
-            position: relative;
-            transform-origin: center center; /* 從中心縮放 */
+            position: absolute; /* 為了讓 JS 計算出的 left/top 偏移生效 */
+            transform-origin: 0 0; /* 縮放原點設定為左上角 */
             background-color: #0f172a;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            overflow: hidden; /* 確保內容不溢出 */
         }
-
+        /* --- 遊戲內部圖層 CSS --- */
         #game-layer {
             position: absolute;
             top: 0;
@@ -61,12 +63,12 @@
             width: 100%;
             height: 100%;
             z-index: 10;
-            pointer-events: none;
+            /* 讓點擊事件穿透到下面的元素，除非有互動元素 */
+            pointer-events: none; 
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            /* 內部 Padding 使用固定像素，因為這是在 scaler 內部 */
-            padding: 24px; 
+            padding: 24px;
         }
 
         /* 狀態面板 - 左上 */
@@ -98,42 +100,10 @@
             gap: 10px;
             font-weight: 800;
             box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-            font-size: 20px; /* 字體加大，因為會被縮小 */
+            font-size: 20px;
             border: 3px solid #cbd5e1;
             transform: skewX(-5deg);
             pointer-events: auto;
-        }
-
-        /* 小地圖 - 右上 */
-        #minimap-container {
-            position: absolute;
-            top: 24px;
-            right: 24px;
-            width: 180px; /* 加大尺寸 */
-            height: 180px;
-            background: #1e293b;
-            border: 4px solid #475569;
-            border-radius: 8px;
-            z-index: 20;
-            overflow: hidden;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-        }
-        #minimap-canvas { width: 100%; height: 100%; display: block; }
-
-        /* 手機版特定樣式 (透過 JS class 切換) */
-        .mobile-layout .status-panel-left {
-            flex-direction: column;
-            gap: 12px;
-            align-items: flex-start;
-        }
-        .mobile-layout .stat-badge {
-            font-size: 24px; /* 手機版字體再大一點 */
-            padding: 8px 16px;
-        }
-        .mobile-layout #minimap-container {
-            width: 150px;
-            height: 150px;
-            border-width: 3px;
         }
         
         /* 底部控制器 */
@@ -142,22 +112,25 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 300px; /* 加大控制區 */
+            height: 300px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
             padding: 0 40px 60px 40px;
-            pointer-events: auto;
+            pointer-events: auto; /* 必須設為 auto 才能接收觸摸事件 */
         }
 
+        /* 搖桿樣式 (確保 touch-action: none 應用在可拖曳元素上) */
         .joystick-base {
-            width: 180px; /* 加大搖桿 */
+            width: 180px;
             height: 180px;
             background: rgba(255, 255, 255, 0.05);
             border: 3px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
             position: relative;
             backdrop-filter: blur(4px);
+            /* 搖桿區域允許觸摸，但禁用瀏覽器手勢 */
+            touch-action: none; 
         }
         
         .joystick-knob {
@@ -187,7 +160,8 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.4);
             border: 3px solid rgba(255,255,255,0.3);
             position: relative;
-            touch-action: none;
+            /* 按鈕禁用瀏覽器手勢 */
+            touch-action: none; 
             backdrop-filter: blur(4px);
         }
         
@@ -215,7 +189,7 @@
         }
 
         #pc-controls-hint {
-            display: none; 
+            display: none;
             position: absolute; top: 120px; left: 24px;
             background: rgba(15, 23, 42, 0.9);
             padding: 16px; border-radius: 12px;
@@ -233,6 +207,7 @@
             margin: 0 4px; border-bottom: 3px solid #0f172a;
         }
 
+        /* 模態框與按鈕樣式 (保持原樣，符合現代遊戲 UI 風格) */
         .modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.85);
@@ -244,7 +219,7 @@
         .modal.show { opacity: 1; pointer-events: auto; }
         
         .modal-content {
-            background: #f8fafc; width: 85%; max-width: 500px; /* 彈窗加大 */
+            background: #f8fafc; width: 85%; max-width: 500px;
             padding: 40px; border-radius: 32px; text-align: center;
             box-shadow: 0 20px 50px rgba(0,0,0,0.6);
             transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -277,10 +252,10 @@
         .floating-text {
             position: absolute; font-weight: 900; pointer-events: none;
             animation: floatUp 2.0s forwards;
-            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            font-family: 'Inter', 'Microsoft JhengHei', sans-serif;
             white-space: nowrap;
             z-index: 100;
-            font-size: 24px; /* 加大浮動文字 */
+            font-size: 24px;
         }
         .dolo-text {
             font-size: 24px;
@@ -350,12 +325,14 @@
 </head>
 <body>
 
-    <!-- 新增外層容器：Game Container -->
+    <!-- 新增外層容器：Game Container (100% 視窗大小) -->
     <div id="game-container">
-        <!-- 新增縮放層：Game Scaler -->
+        <!-- 新增縮放層：Game Scaler (JS 會調整其大小、位置和縮放比例) -->
         <div id="game-scaler">
+            <!-- Canvas 虛擬畫布 -->
             <canvas id="game-layer"></canvas>
 
+            <!-- 浮動 UI 層 (與 Canvas 大小相同) -->
             <div id="ui-layer">
                 <div class="status-panel-left">
                     <div class="stat-badge text-red-600">
@@ -372,9 +349,10 @@
                     </div>
                 </div>
 
-                <div id="minimap-container">
+                <!-- 小地圖已被移除 -->
+                <!-- <div id="minimap-container">
                     <canvas id="minimap-canvas"></canvas>
-                </div>
+                </div> -->
 
                 <div id="pc-controls-hint">
                     <div class="mb-2 text-slate-400 font-bold border-b border-slate-700 pb-1">操作指南</div>
@@ -387,6 +365,7 @@
                     任務目標：清除細菌 (0/10)
                 </div>
 
+                <!-- 底部控制區域 -->
                 <div class="controls-area">
                     <div class="joystick-base" id="joystick-zone">
                         <div class="joystick-knob" id="joystick-knob"></div>
@@ -403,6 +382,7 @@
                 </div>
             </div>
 
+            <!-- 模態框 - 開始 -->
             <div id="start-modal" class="modal show">
                 <div class="modal-content">
                     <div class="text-7xl mb-4">🚰</div>
@@ -431,6 +411,7 @@
                 </div>
             </div>
 
+            <!-- 模態框 - 結束 -->
             <div id="end-modal" class="modal">
                 <div class="modal-content">
                     <div id="end-icon" class="text-8xl mb-4">🏆</div>
@@ -537,13 +518,13 @@
         }
 
         const CONFIG = {
-            tileSize: 64,
+            tileSize: 64, // 每個瓦片的大小（像素）
             playerSpeed: 250,
             enemySpeed: 150, 
             enemyWanderSpeed: 20, // Very Slow
             enemyAggroRange: 300,
-            totalEnemies: 10, 
-            maxPipeStructures: 10, 
+            totalEnemies: 8, // 動態設定
+            maxPipeStructures: 8, // 動態設定
             cleanTimePerTile: 0.5, 
             dirtRegrowRate: 0.4, 
             colors: {
@@ -556,14 +537,14 @@
                 water: '#38bdf8',
                 lightwave: '#fef08a',
                 explosionBlue: '#60a5fa',
-                pipeBase: '#3b82f6',       
-                pipeShadow: '#1e3a8a',     
+                pipeBase: '#3b82f6',     
+                pipeShadow: '#1e3a8a',   
                 pipeHighlight: '#93c5fd',  
                 pipeSpecular: '#ffffff',   
-                connector: '#94a3b8',      
+                connector: '#94a3b8',     
                 connectorTop: '#cbd5e1',   
                 sludgeBase: '#713f12',     
-                sludgeDetail: '#a16207'    
+                sludgeDetail: '#a16207'     
             }
         };
 
@@ -639,7 +620,7 @@
                     if(!this.shootInterval) {
                         this.shootInterval = setInterval(() => Game.player.shoot(), 80); 
                     }
-                    btnShoot.style.transform = 'scale(0.9)';
+                    btnShoot.style.transform = 'scale(0.92) translateY(4px)';
                 };
                 const stopShoot = (e) => {
                     e.preventDefault();
@@ -658,7 +639,7 @@
                     e.preventDefault();
                     if(!Game.running) return;
                     Game.player.placeMine();
-                    btnMine.style.transform = 'scale(0.9)';
+                    btnMine.style.transform = 'scale(0.92) translateY(4px)';
                     setTimeout(() => btnMine.style.transform = 'scale(1)', 100);
                 };
                 btnMine.addEventListener('touchstart', placeMine);
@@ -697,7 +678,7 @@
             origin: { x: 0, y: 0 },
             vector: { x: 0, y: 0 }, 
             touchId: null,
-            radius: 90,  /* 配合放大後的 UI */
+            radius: 90, 
             
             init() {
                 const zone = document.getElementById('joystick-zone');
@@ -708,6 +689,7 @@
                     const touch = e.changedTouches ? e.changedTouches[0] : e;
                     this.touchId = e.changedTouches ? touch.identifier : 'mouse';
                     this.active = true;
+                    // 使用 getBoundingClientRect 獲取相對於視窗的座標
                     const rect = zone.getBoundingClientRect();
                     this.origin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
                     this.updatePosition(touch.clientX, touch.clientY);
@@ -735,16 +717,16 @@
 
                 const endHandler = (e) => {
                     e.preventDefault();
+                    let shouldReset = true;
                     if(e.changedTouches) {
                         for(let i=0; i<e.changedTouches.length; i++) {
                             if(e.changedTouches[i].identifier === this.touchId) {
-                                this.reset();
+                                shouldReset = true;
                                 break;
                             }
                         }
-                    } else {
-                        this.reset();
-                    }
+                    } 
+                    if (shouldReset) this.reset();
                 };
 
                 zone.addEventListener('touchstart', startHandler);
@@ -785,29 +767,22 @@
         const Camera = {
             x: 0, y: 0,
             follow(target) {
-                if(!Game.mapCols) return;
-                this.x = target.x - canvas.width / 2;
-                this.y = target.y - canvas.height / 2;
-                const mapW = Game.mapCols * CONFIG.tileSize;
-                const mapH = Game.mapRows * CONFIG.tileSize;
-                this.x = Math.max(0, Math.min(this.x, mapW - canvas.width));
-                this.y = Math.max(0, Math.min(this.y, mapH - canvas.height));
-                if (mapW < canvas.width) this.x = -(canvas.width - mapW) / 2;
-                if (mapH < canvas.height) this.y = -(canvas.height - mapH) / 2;
+                // 調整：禁用相機追蹤，實現全圖視野
+                this.x = 0; 
+                this.y = 0;
             }
         };
 
         const canvas = document.getElementById('game-layer');
         const ctx = canvas.getContext('2d');
-        const minimapCanvas = document.getElementById('minimap-canvas');
-        const mmCtx = minimapCanvas.getContext('2d');
+        // 移除小地圖相關變數
 
         const Game = {
             running: false,
             lastTime: 0,
             timeElapsed: 0,
-            mapCols: 25, 
-            mapRows: 25,
+            mapCols: 20, // 初始值，將由 handleResize 動態設定
+            mapRows: 20, // 初始值，將由 handleResize 動態設定
             grid: [],
             entities: [],
             particles: [],
@@ -821,72 +796,111 @@
             init() {
                 Input.init(); 
                 
-                // 監聽外層容器 game-container 的大小變化
+                // 使用 ResizeObserver 確保在任何設備和方向上都能完美縮放
+                const gameContainer = document.getElementById('game-container');
                 const resizeObserver = new ResizeObserver(entries => {
                     for (let entry of entries) {
-                        this.handleResize(entry.contentRect.width, entry.contentRect.height);
+                        // 確保 contentRect 存在
+                        if (entry.contentRect) {
+                            this.handleResize(entry.contentRect.width, entry.contentRect.height);
+                        }
                     }
                 });
-                resizeObserver.observe(document.getElementById('game-container'));
+                resizeObserver.observe(gameContainer);
+
+                // 首次執行，確保初始大小正確
+                const initialRect = gameContainer.getBoundingClientRect();
+                this.handleResize(initialRect.width, initialRect.height);
             },
 
             handleResize(containerWidth, containerHeight) {
                 // 1. 判定模式 (跟隨網頁 CSS 斷點: 768px)
                 const newIsDesktop = containerWidth > 768;
 
-                // 2. 設定虛擬畫布寬度 (固定)
-                const virtualWidth = newIsDesktop ? 1920 : 1080;
+                // --- START 動態地圖格子計算 ---
+                const tileSize = CONFIG.tileSize;
+                const minTilesWide = 16;
+                const minTilesHigh = 16;
+
+                const containerRatio = containerWidth / containerHeight;
+
+                let calculatedMapRows;
+                let calculatedMapCols;
+
+                if (containerRatio > 1) { // 寬螢幕 (Desktop/Landscape) - 固定高，寬度適應
+                    // 以最小高度為基準計算，並確保寬度不小於 20 瓦片
+                    calculatedMapRows = minTilesHigh;
+                    calculatedMapCols = Math.ceil(minTilesHigh * containerRatio);
+                    calculatedMapCols = Math.max(calculatedMapCols, 20); 
+                } else { // 窄螢幕 (Mobile/Portrait) - 固定寬，高度適應
+                    // 以最小寬度為基準計算，並確保高度不小於 20 瓦片
+                    calculatedMapCols = minTilesWide;
+                    calculatedMapRows = Math.ceil(minTilesWide / containerRatio);
+                    calculatedMapRows = Math.max(calculatedMapRows, 20); 
+                }
+                // --- END 動態地圖格子計算 ---
+
+                // 2. 應用新的地圖尺寸
+                const mapCols = calculatedMapCols;
+                const mapRows = calculatedMapRows;
+
+                // 3. 計算虛擬畫布的像素尺寸
+                const virtualWidth = mapCols * tileSize;
+                const virtualHeight = mapRows * tileSize;
+
+                // 4. 計算縮放比例 (Cover/填滿模式)
+                const scaleX = containerWidth / virtualWidth;
+                const scaleY = containerHeight / virtualHeight;
+                const scale = Math.max(scaleX, scaleY); 
                 
-                // 3. 計算縮放比例 (讓虛擬寬度剛好塞進容器寬度)
-                // scale = 實際容器寬度 / 虛擬寬度
-                const scale = containerWidth / virtualWidth;
-
-                // 4. 反推虛擬畫布高度 (讓 Scaler 高度縮放後 = 實際容器高度)
-                // 這樣能確保遊戲畫面填滿容器，不會有黑邊
-                const virtualHeight = containerHeight / scale;
-
-                // 5. 應用設定到 Scaler
+                // 5. 應用縮放
                 const scaler = document.getElementById('game-scaler');
                 scaler.style.width = `${virtualWidth}px`;
                 scaler.style.height = `${virtualHeight}px`;
                 scaler.style.transform = `scale(${scale})`;
 
-                // 6. 更新 Canvas 解析度
+                // 6. 居中偏移
+                const currentW = virtualWidth * scale;
+                const currentH = virtualHeight * scale;
+
+                const offsetX = (containerWidth - currentW) / 2;
+                const offsetY = (containerHeight - currentH) / 2;
+
+                scaler.style.left = `${offsetX}px`;
+                scaler.style.top = `${offsetY}px`;
+
+                // 7. 更新 Canvas 解析度
                 canvas.width = virtualWidth;
                 canvas.height = virtualHeight;
                 
                 ctx.imageSmoothingEnabled = false; 
-                minimapCanvas.width = 150;
-                minimapCanvas.height = 150;
 
-                // 7. 如果模式改變，重新生成遊戲配置
-                if (this.isDesktop !== newIsDesktop) {
+                // 8. 如果地圖尺寸或模式改變，重新配置遊戲設定
+                if (this.isDesktop !== newIsDesktop || this.mapCols !== mapCols || this.mapRows !== mapRows) {
                     this.isDesktop = newIsDesktop;
+                    this.mapCols = mapCols; // Store the new dynamic dimensions
+                    this.mapRows = mapRows; // Store the new dynamic dimensions
                     this.configureGameSettings();
                     Input.updateModeDisplay(this.isDesktop);
                     if (this.running) {
+                        // 重新開始遊戲以生成新的地圖
                         this.restart(); 
                     }
                 }
             },
 
             configureGameSettings() {
-                if (this.isDesktop) {
-                    // PC 設定
-                    this.mapCols = 30; // 加寬地圖以適應 1920
-                    this.mapRows = 20;
-                    CONFIG.maxPipeStructures = 10;
-                    CONFIG.totalEnemies = 10;
-                    CONFIG.enemySpeed = 100; // 追逐速度: 慢
-                } else {
-                    // 手機 設定 (直向)
-                    this.mapCols = 16; // 調整為 16x20 以減少擁擠感
-                    this.mapRows = 20; 
-                    CONFIG.maxPipeStructures = 5; 
-                    CONFIG.totalEnemies = 6;      
-                    CONFIG.enemySpeed = 80; // 追逐速度: 慢
-                }
-                CONFIG.enemyWanderSpeed = 20; // 漫遊速度: 非常緩慢
+                // 根據當前地圖的總面積來調整難度（可選）
+                const totalTiles = this.mapCols * this.mapRows;
+                // 較小的地圖使用較少的敵人/水管，確保遊戲性
+                CONFIG.maxPipeStructures = Math.min(8, Math.floor(totalTiles / 50)); 
+                CONFIG.totalEnemies = Math.min(8, Math.floor(totalTiles / 60));
+                
+                if (CONFIG.maxPipeStructures < 4) CONFIG.maxPipeStructures = 4;
+                if (CONFIG.totalEnemies < 4) CONFIG.totalEnemies = 4;
+
+                CONFIG.enemySpeed = 80;
+                CONFIG.enemyWanderSpeed = 20;
 
                 const goalE = document.getElementById('goal-enemies');
                 const goalP = document.getElementById('goal-pipes');
@@ -909,7 +923,11 @@
                 this.obstacles = [];
                 this.entities = [];
                 this.generateLevel();
-                this.player = new Player(CONFIG.tileSize * 2, CONFIG.tileSize * 2);
+                // 玩家出生點移到地圖中心
+                this.player = new Player(
+                    this.mapCols * CONFIG.tileSize / 2 - 20, 
+                    this.mapRows * CONFIG.tileSize / 2 - 20
+                );
                 this.entities.push(this.player);
                 for(let i=0; i<CONFIG.totalEnemies; i++) this.spawnEnemy();
                 this.lastTime = performance.now();
@@ -938,12 +956,16 @@
 
                 let pipesPlaced = 0;
                 let attempts = 0;
-                while(pipesPlaced < CONFIG.maxPipeStructures && attempts < 200) {
+                while(pipesPlaced < CONFIG.maxPipeStructures && attempts < 400) { // 增加嘗試次數
                     attempts++;
-                    let r = Math.floor(Math.random() * (this.mapRows - 4)) + 2;
+                    // 隨機範圍縮小，避免貼邊
+                    let r = Math.floor(Math.random() * (this.mapRows - 4)) + 2; 
                     let c = Math.floor(Math.random() * (this.mapCols - 4)) + 2;
                     
-                    if (r < 6 && c < 6) continue; 
+                    // 避免靠近中心點 (玩家初始位置)
+                    const centerR = Math.floor(this.mapRows / 2);
+                    const centerC = Math.floor(this.mapCols / 2);
+                    if (Math.abs(r - centerR) < 3 && Math.abs(c - centerC) < 3) continue;
 
                     const shapeTemplate = SHAPES[Math.floor(Math.random() * SHAPES.length)];
                     
@@ -952,7 +974,7 @@
                     for(let block of shapeTemplate) {
                         let targetR = r + block.r;
                         let targetC = c + block.c;
-                        if(this.grid[targetR][targetC] !== 0) {
+                        if(targetR < 0 || targetR >= this.mapRows || targetC < 0 || targetC >= this.mapCols || this.grid[targetR][targetC] !== 0) {
                             canPlace = false;
                             break;
                         }
@@ -977,8 +999,12 @@
                     x = c * CONFIG.tileSize;
                     y = r * CONFIG.tileSize;
                     attempts++;
-                    let dist = Math.hypot(x - CONFIG.tileSize*2, y - CONFIG.tileSize*2);
-                    if (this.grid[r][c] === 0 && dist > 300) break;
+                    // 避免在玩家出生點附近生成
+                    const centerPlayerX = this.mapCols * CONFIG.tileSize / 2;
+                    const centerPlayerY = this.mapRows * CONFIG.tileSize / 2;
+                    let dist = Math.hypot(x - centerPlayerX, y - centerPlayerY);
+
+                    if (this.grid[r] && this.grid[r][c] === 0 && dist > 300) break;
                 } while (attempts < 50);
 
                 if (attempts < 50) {
@@ -1019,12 +1045,10 @@
                 const enemiesLeft = CONFIG.totalEnemies - this.enemiesKilled;
                 
                 document.getElementById('obj-text').innerText = `剩餘細菌: ${enemiesLeft} | 髒水管: ${dirtyPipes}`;
-                if (enemiesLeft === 0 && dirtyPipes === 0) this.gameOver(true);
+                if (enemiesLeft <= 0 && dirtyPipes <= 0) this.gameOver(true);
             },
 
             draw() {
-                const bgSize = CONFIG.tileSize;
-                
                 ctx.fillStyle = '#1e293b'; 
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1036,6 +1060,7 @@
                 const startRow = Math.floor(Camera.y / CONFIG.tileSize);
                 const endRow = startRow + (canvas.height / CONFIG.tileSize) + 1;
 
+                // 繪製地板
                 for (let r = startRow; r <= endRow; r++) {
                     for (let c = startCol; c <= endCol; c++) {
                         if (r >= 0 && r < this.mapRows && c >= 0 && c < this.mapCols) {
@@ -1052,69 +1077,24 @@
                     }
                 }
 
+                // 繪製光波
                 const lightWaves = this.entities.filter(e => e instanceof LightWave);
                 lightWaves.forEach(w => w.draw(ctx));
                 
+                // 依 Y 軸排序繪製（實現偽 3D）
                 const renderList = [...this.obstacles, ...this.entities.filter(e => !(e instanceof LightWave)), ...this.particles];
                 renderList.sort((a, b) => (a.y + (a.h || 0)) - (b.y + (b.h || 0)));
                 
                 renderList.forEach(obj => obj.draw(ctx));
                 ctx.restore();
-                this.drawMinimap();
+                // 移除 drawMinimap 呼叫
+                // this.drawMinimap();
             },
 
-            drawMinimap() {
-                mmCtx.fillStyle = '#0f172a';
-                mmCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
-                const mapW = this.mapCols * CONFIG.tileSize;
-                const mapH = this.mapRows * CONFIG.tileSize;
-                const scaleX = minimapCanvas.width / mapW;
-                const scaleY = minimapCanvas.height / mapH;
-
-                this.obstacles.forEach(o => {
-                    if (o instanceof Pipe && o.dirty) {
-                        mmCtx.fillStyle = '#facc15'; 
-                        o.segments.forEach(s => {
-                            mmCtx.fillRect(s.c * CONFIG.tileSize * scaleX, s.r * CONFIG.tileSize * scaleY, 4, 4);
-                        });
-                    } else if (o instanceof Wall && !(o instanceof Pipe)) {
-                        mmCtx.fillStyle = '#475569'; 
-                        mmCtx.fillRect(o.x * scaleX, o.y * scaleY, 3, 3);
-                    }
-                });
-
-                mmCtx.fillStyle = '#ef4444';
-                this.entities.forEach(e => {
-                    if (e.type === 'enemy') {
-                        const blink = Math.sin(Date.now() / 200) > 0;
-                        mmCtx.fillStyle = blink ? '#ef4444' : '#7f1d1d';
-                        mmCtx.beginPath();
-                        mmCtx.arc((e.x+e.w/2)*scaleX, (e.y+e.h/2)*scaleY, 3, 0, Math.PI*2);
-                        mmCtx.fill();
-                    }
-                });
-
-                if(this.player) {
-                    const px = (this.player.x + this.player.w/2) * scaleX;
-                    const py = (this.player.y + this.player.h/2) * scaleY;
-                    const angle = Math.atan2(this.player.facing.y, this.player.facing.x);
-                    
-                    mmCtx.save();
-                    mmCtx.translate(px, py);
-                    mmCtx.rotate(angle);
-                    mmCtx.fillStyle = '#38bdf8';
-                    mmCtx.beginPath();
-                    mmCtx.moveTo(5, 0);
-                    mmCtx.lineTo(-4, 4);
-                    mmCtx.lineTo(-4, -4);
-                    mmCtx.fill();
-                    mmCtx.restore();
-
-                    mmCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-                    mmCtx.lineWidth = 1;
-                    mmCtx.strokeRect(Camera.x * scaleX, Camera.y * scaleY, canvas.width * scaleX, canvas.height * scaleY);
-                }
-            },
+            // 移除 drawMinimap 函數
+            /* drawMinimap() {
+                // ... (Minimap logic removed)
+            }, */
 
             shakeScreen() {
                 const intensity = 10;
@@ -1127,8 +1107,12 @@
                 el.className = 'floating-text';
                 if(type === 'dolo') el.classList.add('dolo-text');
                 
-                el.style.left = (x - Camera.x) + 'px'; 
-                el.style.top = (y - Camera.y) + 'px';
+                // 轉換世界座標到螢幕座標
+                const screenX = x - Camera.x;
+                const screenY = y - Camera.y;
+                
+                el.style.left = screenX + 'px'; 
+                el.style.top = screenY + 'px';
                 el.style.color = color;
                 el.innerText = text;
                 document.getElementById('game-layer').parentNode.appendChild(el); 
@@ -1141,11 +1125,11 @@
                 document.getElementById('mine-count').innerText = this.mineCount;
                 const btnMine = document.getElementById('btn-mine');
                 if (this.mineCount > 0) {
-                      btnMine.style.borderColor = '#fbbf24';
-                      btnMine.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
+                     btnMine.style.borderColor = '#fbbf24';
+                     btnMine.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
                 } else {
-                      btnMine.style.borderColor = 'rgba(255,255,255,0.4)';
-                      btnMine.style.background = 'rgba(255, 255, 255, 0.1)';
+                     btnMine.style.borderColor = 'rgba(255,255,255,0.4)';
+                     btnMine.style.background = 'rgba(255, 255, 255, 0.1)';
                 }
             },
 
@@ -1164,7 +1148,7 @@
                 if (win) {
                     icon.innerText = "✨";
                     title.innerText = "完美淨化！";
-                    title.className = "text-3xl font-black text-green-600 mb-2";
+                    title.className = "text-5xl font-black text-green-600 mb-4";
                     msg.innerText = `所有威脅已清除！`;
                     btnCoupon.classList.remove('hidden');
                     btnSave.classList.remove('hidden');
@@ -1173,7 +1157,6 @@
                     let mins = Math.floor(this.timeElapsed/60).toString().padStart(2,'0');
                     let secs = Math.floor(this.timeElapsed%60).toString().padStart(2,'0');
                     
-                    // 獲取當前日期和時間
                     const now = new Date();
                     const dateStr = `${now.getFullYear()}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
@@ -1193,10 +1176,10 @@
                 } else {
                     icon.innerText = "🦠";
                     title.innerText = "任務失敗";
-                    title.className = "text-3xl font-black text-red-600 mb-2";
+                    title.className = "text-5xl font-black text-red-600 mb-4";
                     msg.innerText = `細菌太多了...`;
                     btnCoupon.classList.add('hidden');
-                    btnSave.classList.add('hidden'); // 失敗時通常不存戰績，也可視需求開啟
+                    btnSave.classList.add('hidden');
                     statsContainer.classList.add('hidden');
                 }
             }
@@ -1249,7 +1232,7 @@
                 if (this.invincible > 0) this.invincible -= dt;
             }
             isValidMove(nx, ny) {
-                if(nx < 0 || ny < 0 || nx > Game.mapCols*CONFIG.tileSize || ny > Game.mapRows*CONFIG.tileSize) return false;
+                if(nx < 0 || ny < 0 || nx > Game.mapCols*CONFIG.tileSize - this.w || ny > Game.mapRows*CONFIG.tileSize - this.h) return false;
                 const padding = 5;
                 const points = [
                     {c: Math.floor((nx+padding)/CONFIG.tileSize), r: Math.floor((ny+padding)/CONFIG.tileSize)},
@@ -1297,6 +1280,7 @@
                 ctx.beginPath(); ctx.ellipse(0, 15, 12, 5, 0, 0, Math.PI*2); ctx.fill();
 
                 if (this.invincible > 0 && Math.floor(Date.now()/100)%2) ctx.globalAlpha = 0.5;
+                // 根據面對方向翻轉角色
                 if (this.facing.x < 0) ctx.scale(-1, 1);
 
                 // 3D Character Drawing
@@ -1466,6 +1450,7 @@
             }
             checkHit(entity) {
                 for (const beam of this.beams) {
+                    // 檢查光束是否擊中實體
                     if (checkCollision(entity, beam)) return true;
                 }
                 return false;
@@ -1502,7 +1487,7 @@
             constructor(x, y, dx, dy) {
                 super(x, y, 10, 10);
                 this.vx = dx * 500; this.vy = dy * 500;
-                this.life = 0.6; // Increased range (from 0.4s to 0.6s)
+                this.life = 0.6; 
             }
             update(dt) {
                 this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
@@ -1678,6 +1663,7 @@
                         const bvx = bullet.vx / len;
                         const bvy = bullet.vy / len;
                         
+                        // 檢查子彈方向是否與管口方向一致（進入管子）
                         if (bvx * op.enterDir.x + bvy * op.enterDir.y > 0.5) {
                             return true;
                         }
@@ -1727,7 +1713,7 @@
 
                 Game.addFloatingText(cx, cy, "(dolo團隊-專業洗水管)", "#fff", 'dolo');
                 
-                // Beam calculation
+                // Beam calculation (向管口外射出光波)
                 const beams = [];
                 const thickness = 40;
 
@@ -1773,44 +1759,12 @@
             draw(ctx) {
                 ctx.save();
                 
-                const pipePath = new Path2D();
+                const centerPath = new Path2D();
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 const pipeWidth = 40; 
 
-                // 1. 建立管線主幹路徑 (3D管身)
-                this.segments.forEach(s1 => {
-                    const cx1 = (s1.c + 0.5) * CONFIG.tileSize;
-                    const cy1 = (s1.r + 0.5) * CONFIG.tileSize;
-                    pipePath.moveTo(cx1 + pipeWidth/2, cy1);
-                    pipePath.arc(cx1, cy1, pipeWidth/2, 0, Math.PI*2);
-
-                    this.segments.forEach(s2 => {
-                        if (s1 === s2) return;
-                        if (Math.abs(s1.c - s2.c) + Math.abs(s1.r - s2.r) === 1) {
-                            const cx2 = (s2.c + 0.5) * CONFIG.tileSize;
-                            const cy2 = (s2.r + 0.5) * CONFIG.tileSize;
-                            const dx = cx2 - cx1;
-                            const dy = cy2 - cy1;
-                            if(Math.abs(dx) > 0) {
-                                const x = Math.min(cx1, cx2);
-                                pipePath.rect(x, cy1 - pipeWidth/2, Math.abs(dx), pipeWidth);
-                            } else {
-                                const y = Math.min(cy1, cy2);
-                                pipePath.rect(cx1 - pipeWidth/2, y, pipeWidth, Math.abs(dy));
-                            }
-                        }
-                    });
-                });
-
-                // 陰影層
-                ctx.lineWidth = 44;
-                ctx.strokeStyle = CONFIG.colors.pipeShadow; 
-                ctx.fillStyle = CONFIG.colors.pipeShadow;
-                ctx.fill(pipePath);
-
-                // 中心線路徑（多次重複利用）
-                const centerPath = new Path2D();
+                // 建立管線中心線路徑
                 this.segments.forEach(s1 => {
                     const cx1 = (s1.c + 0.5) * CONFIG.tileSize;
                     const cy1 = (s1.r + 0.5) * CONFIG.tileSize;
@@ -1825,7 +1779,7 @@
                     });
                 });
 
-                // 外圍厚管身（暗）
+                // 1. 繪製陰影/外框
                 ctx.lineWidth = 48;
                 ctx.strokeStyle = CONFIG.colors.pipeShadow;
                 ctx.stroke(centerPath);
@@ -1838,7 +1792,7 @@
                     ctx.fill();
                 });
 
-                // 主色管身
+                // 2. 繪製主色管身
                 ctx.lineWidth = 40;
                 ctx.strokeStyle = CONFIG.colors.pipeBase;
                 ctx.stroke(centerPath);
@@ -1851,7 +1805,7 @@
                     ctx.fill();
                 });
 
-                // 高光層
+                // 3. 繪製高光層
                 ctx.lineWidth = 24;
                 ctx.strokeStyle = CONFIG.colors.pipeHighlight;
                 ctx.stroke(centerPath);
@@ -1864,7 +1818,7 @@
                     ctx.fill();
                 });
 
-                // 鏡面反光
+                // 4. 繪製鏡面反光
                 ctx.lineWidth = 8;
                 ctx.strokeStyle = CONFIG.colors.pipeSpecular;
                 ctx.globalAlpha = 0.6;
@@ -1879,11 +1833,12 @@
                 });
                 ctx.globalAlpha = 1.0;
 
-                // 2. 管內髒污（依清潔度縮減）
+                // 5. 繪製髒污（帶剪裁）
                 if (this.dirty) {
                     let sludgeScale = 1 - this.cleanliness;
                     
                     ctx.save();
+                    // 建立內管剪裁路徑
                     const clipPath = new Path2D();
                     const r = 16; 
                     this.segments.forEach(s1 => {
@@ -1913,16 +1868,20 @@
 
                     const wiggle = Math.sin(Date.now() / 200 + this.sludgeOffset) * 2;
                     
+                    // 髒污底色
                     ctx.strokeStyle = CONFIG.colors.sludgeBase;
                     ctx.lineWidth = 32 * sludgeScale; 
+                    ctx.setLineDash([]);
                     ctx.stroke(centerPath);
                     
+                    // 髒污細節
                     ctx.strokeStyle = CONFIG.colors.sludgeDetail;
                     ctx.lineWidth = 24 * sludgeScale;
                     ctx.setLineDash([5, 10]);
                     ctx.lineDashOffset = wiggle;
                     ctx.stroke(centerPath);
                     
+                    // 清潔時的水流效果
                     if(this.cleanliness > 0) {
                         ctx.strokeStyle = '#bae6fd'; 
                         ctx.lineWidth = 20 * this.cleanliness; 
@@ -1934,9 +1893,8 @@
                     ctx.restore();
                 }
 
-                // 3. 管口 (亮灰色長方形, 高:寬約 5:1)
+                // 6. 繪製管口
                 this.openings.forEach(op => {
-                    // 方向：朝「管子外面」的方向
                     const dirX = -op.enterDir.x;
                     const dirY = -op.enterDir.y;
                     const angle = Math.atan2(dirY, dirX);
@@ -1945,19 +1903,14 @@
                     ctx.translate(op.holeX, op.holeY);
                     ctx.rotate(angle);
 
-                    // 繪製亮灰色長方形
-                    // 比例 5:1 (相對於格子64px -> 寬約13px)
-                    // 長度設為 44px (略大於管徑 40px)，厚度 13px
-                    ctx.fillStyle = '#e2e8f0'; // 亮灰色
-                    
-                    // 繪製置中的長方形
-                    // x從 -6.5 到 6.5 (厚度13), y從 -22 到 22 (長度44)
+                    // 繪製亮灰色長方形作為管口
+                    ctx.fillStyle = '#e2e8f0'; 
                     ctx.fillRect(-6.5, -22, 13, 44);
 
                     ctx.restore();
                 });
                 
-                // 4. 閥門
+                // 7. 繪製閥門
                 if(this.hasValve) {
                     const vx = (this.valvePos.c + 0.5) * CONFIG.tileSize;
                     const vy = (this.valvePos.r + 0.5) * CONFIG.tileSize;
