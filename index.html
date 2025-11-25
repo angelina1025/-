@@ -427,6 +427,11 @@
                     </div>
 
                     <button class="btn-primary" onclick="Game.start()">開始任務</button>
+                    
+                    <!-- 新增彈窗內的全螢幕按鈕 -->
+                    <button id="btn-fullscreen-modal" class="mt-4 w-full py-3 rounded-xl font-bold text-lg text-slate-500 bg-slate-200 hover:bg-slate-300 transition-colors" onclick="toggleFullscreen()">
+                        ⛶ 全螢幕遊玩
+                    </button>
                 </div>
             </div>
 
@@ -461,9 +466,21 @@
         const LINE_COUPON_URL = "https://lin.ee/eUHT4zO"; 
         function openLineCoupon() { window.open(LINE_COUPON_URL, '_blank'); }
 
-        // --- 全螢幕切換功能 ---
+        // --- 全螢幕切換功能 (更新以支援多個按鈕) ---
+        
+        function updateFullscreenButtons() {
+            const isFs = !!document.fullscreenElement;
+            
+            // 更新右上角按鈕
+            const btnMain = document.getElementById('btn-fullscreen');
+            if(btnMain) btnMain.innerHTML = isFs ? '↩ 退出' : '⛶ 全螢幕';
+
+            // 更新彈窗內按鈕
+            const btnModal = document.getElementById('btn-fullscreen-modal');
+            if(btnModal) btnModal.innerHTML = isFs ? '↩ 退出全螢幕' : '⛶ 全螢幕遊玩';
+        }
+
         async function toggleFullscreen() {
-            const btn = document.getElementById('btn-fullscreen');
             if (!document.fullscreenElement) {
                 try {
                     await document.documentElement.requestFullscreen();
@@ -473,7 +490,6 @@
                             console.log('Orientation lock failed (usually requires user gesture or standalone mode):', err);
                         });
                     }
-                    btn.innerHTML = '↩ 退出';
                 } catch (err) {
                     console.log('Error attempting to enable full-screen mode:', err);
                 }
@@ -484,19 +500,12 @@
                 if (screen.orientation && screen.orientation.unlock) {
                     screen.orientation.unlock();
                 }
-                btn.innerHTML = '⛶ 全螢幕';
             }
+            // UI 更新將由 fullscreenchange 事件處理
         }
 
-        // 監聽全螢幕變化以更新按鈕文字 (例如按 ESC 退出時)
-        document.addEventListener('fullscreenchange', () => {
-            const btn = document.getElementById('btn-fullscreen');
-            if (!document.fullscreenElement) {
-                btn.innerHTML = '⛶ 全螢幕';
-            } else {
-                btn.innerHTML = '↩ 退出';
-            }
-        });
+        // 監聽全螢幕變化以更新所有按鈕文字
+        document.addEventListener('fullscreenchange', updateFullscreenButtons);
 
         // --- 儲存戰績卡功能 ---
         function saveResultImage() {
